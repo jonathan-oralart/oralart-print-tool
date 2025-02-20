@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Lab Sheet Extractor
 // @namespace    http://tampermonkey.net/
-// @version      1.2
+// @version      1.3
 // @description  Extracts and prints lab sheet information from 3Shape
 // @author       You
 // @match        https://lms.3shape.com/ui/CaseRecord/*
@@ -22,7 +22,7 @@
 (function () {
     'use strict';
 
-    console.log(`Version 1.2`);
+    console.log(`Version 1.3`);
     // Add print button to the page
     function addPrintButton() {
         const button = document.createElement('button');
