@@ -741,8 +741,8 @@
             // openPreviewWindow(labelHTML);
 
             // Download both PDFs
-            const workTicketFilename = `${cachedData.panNum}_workticket.pdf`.replace(/[^a-z0-9_.]/gi, '_');
-            const labelFilename = `${cachedData.panNum}_label.pdf`.replace(/[^a-z0-9_.]/gi, '_');
+            const workTicketFilename = `OA1_${cachedData.panNum}_workticket.pdf`.replace(/[^a-z0-9_.]/gi, '_');
+            const labelFilename = `OA1_${cachedData.panNum}_label.pdf`.replace(/[^a-z0-9_.]/gi, '_');
 
             downloadPDF(cachedPDFs.workTicket, workTicketFilename);
             downloadPDF(cachedPDFs.label, labelFilename);
