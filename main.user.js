@@ -22,7 +22,7 @@
 (function () {
     'use strict';
 
-    console.log(`Version 1.3`);
+    console.log(`Version 1.4`);
     // Add print button to the page
     function addPrintButton() {
         const button = document.createElement('button');
@@ -371,8 +371,7 @@
                 margin-bottom: 2px;
             }
             .info-value {
-                font-size: min(100cqw, 32px);
-                white-space: nowrap;
+                font-size: 32px;
                 font-weight: bold;
                 margin-bottom: 10px;
             }
@@ -657,6 +656,7 @@
             .left { 
                 text-align: left;
                 font-size: 30px;
+                word-break: break-all;
             }
             .center { 
                 text-align: center;
@@ -737,15 +737,15 @@
             const labelHTML = generateLabelHTML(cachedData);
 
             // Open preview windows
-            // openPreviewWindow(workTicketHTML);
-            // openPreviewWindow(labelHTML);
+            openPreviewWindow(workTicketHTML);
+            openPreviewWindow(labelHTML);
 
             // Download both PDFs
             const workTicketFilename = `${cachedData.panNum}_workticket.pdf`.replace(/[^a-z0-9_.]/gi, '_');
             const labelFilename = `${cachedData.panNum}_label.pdf`.replace(/[^a-z0-9_.]/gi, '_');
 
-            downloadPDF(cachedPDFs.workTicket, workTicketFilename);
-            downloadPDF(cachedPDFs.label, labelFilename);
+            // downloadPDF(cachedPDFs.workTicket, workTicketFilename);
+            // downloadPDF(cachedPDFs.label, labelFilename);
 
         } catch (e) {
             console.error('Error in printLabSheet:', e);
