@@ -22,7 +22,7 @@
 (function () {
     'use strict';
 
-    alert(`Version 1.0.0`);
+    console.log(`Version 1.0.1`);
     // Add print button to the page
     function addPrintButton() {
         const button = document.createElement('button');
