@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Lab Sheet Extractor
 // @namespace    http://tampermonkey.net/
-// @version      1.4
+// @version      1.5
 // @description  Extracts and prints lab sheet information from 3Shape
 // @author       You
 // @match        https://lms.3shape.com/ui/CaseRecord/*
@@ -737,15 +737,15 @@
             const labelHTML = generateLabelHTML(cachedData);
 
             // Open preview windows
-            openPreviewWindow(workTicketHTML);
-            openPreviewWindow(labelHTML);
+            // openPreviewWindow(workTicketHTML);
+            // openPreviewWindow(labelHTML);
 
             // Download both PDFs
             const workTicketFilename = `${cachedData.panNum}_workticket.pdf`.replace(/[^a-z0-9_.]/gi, '_');
             const labelFilename = `${cachedData.panNum}_label.pdf`.replace(/[^a-z0-9_.]/gi, '_');
 
-            // downloadPDF(cachedPDFs.workTicket, workTicketFilename);
-            // downloadPDF(cachedPDFs.label, labelFilename);
+            downloadPDF(cachedPDFs.workTicket, workTicketFilename);
+            downloadPDF(cachedPDFs.label, labelFilename);
 
         } catch (e) {
             console.error('Error in printLabSheet:', e);
