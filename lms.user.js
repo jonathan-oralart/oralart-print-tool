@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         Lab Sheet Extractor
+// @name         LMS
 // @namespace    http://tampermonkey.net/
 // @version      1.6
 // @description  Extracts and prints lab sheet information from 3Shape
@@ -12,6 +12,7 @@
 // @connect      api.doppio.sh
 // @require      https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js
 // @require      https://cdn.jsdelivr.net/npm/dayjs@1.11.10/dayjs.min.js
+// @require      file:///Users/oralart/Repos/oralart-print-tool/lms.user.js
 // @grant        GM_cookie
 // @grant        GM_download
 // @grant        GM_getValue
@@ -188,6 +189,20 @@
         });
     };
 
+    const fetchProductLookup = async () => {
+        try {
+            const response = await fetch("https://api.sheety.co/6565224fa65a11082d88012dd5762961/maskingTapeItemRules/sheet1");
+            const data = await response.json();
+            return data.sheet1.reduce((acc, item) => {
+                acc[item.product] = item.use;
+                return acc;
+            }, {});
+        } catch (error) {
+            console.error('Error fetching product lookup:', error);
+            return {};
+        }
+    };
+
     // Modify the getData function
     const getData = async () => {
         try {
@@ -196,18 +211,17 @@
 
             // First get the case data to extract clientId
             const caseData = await fetchWithAuth(`https://lms.3shape.com/backend/case/caseInfo/${caseId}`);
-            const [productionData, itemsData, preferencesData, courierInfo,
-            ] = await Promise.all([
+            const [productionData, itemsData, preferencesData, courierInfo, productLookup] = await Promise.all([
                 fetchWithAuth(`https://lms.3shape.com/backend/manufacture/productionLog/${caseId}?limit=100&offset=0`),
                 fetchWithAuth(`https://lms.3shape.com/backend/case/record/caseItem/${caseId}`),
                 fetchWithAuth(`https://lms.3shape.com/backend/doctor/case-preferences/${caseId}?limit=100`),
                 fetchClientCourierInfo(caseData.clientId),
+                fetchProductLookup()
             ]);
-
 
             // Format case items data with type lookup
             const caseItems = itemsData.data.map(item => ({
-                type: item.ProductType,
+                type: productLookup[item.Item] || "",
                 toothNum: item.ToothNum,
                 item: item.Item,
                 shade: item.Shade || 'N/A'
@@ -613,7 +627,26 @@
     };
 
     const generateLabelHTML = (data) => {
-        let targetDate = '';
+        // Group items by type and count teeth, excluding "hide" type
+        const typeGroups = data.caseItems.reduce((acc, item) => {
+            if (item.type && item.type.toLowerCase() !== 'hide') {
+                const type = item.type;
+                // Split tooth numbers by comma and count them
+                const teethCount = item.toothNum
+                    .split(',')
+                    .length;
+
+                acc[type] = (acc[type] || 0) + teethCount;
+            }
+            return acc;
+        }, {});
+
+        // Format the groups into strings like "3x Zir\n2x Emax"
+        const typeText = Object.entries(typeGroups)
+            .map(([type, count]) => `${count}ˣ${type}`)
+            .join('\n');
+
+        let formattedDate = { dayAndDate: '', month: '' };
         const porcelainStep = data.productionLog.find(log => log.step.toLowerCase().includes('porcelain'));
         const qualityStep = data.productionLog.find(log => log.step.toLowerCase().includes('quality'));
 
@@ -627,7 +660,6 @@
             };
         };
 
-        let formattedDate = { dayAndDate: '', month: '' };
         if (porcelainStep && porcelainStep.rawDate) {
             formattedDate = formatDate(porcelainStep.rawDate);
         } else if (qualityStep && qualityStep.rawDate) {
@@ -644,26 +676,27 @@
             body {
                 margin: 0;
                 padding: 10px;
-                font-family: Arial, sans-serif;
-                font-weight: bold;
+                font-family: monospace;
             }
             .container {
                 display: grid;
-                grid-template-columns: 1fr 1fr 1fr;
+                grid-template-columns: 7fr 6fr 6fr;
                 width: 100%;
                 align-items: start;
+                font-size: 28px;
             }
             .left { 
                 text-align: left;
-                font-size: 30px;
-                word-break: break-all;
+                word-break: normal;
+                white-space: pre-line;
+                line-height: 1.2;
             }
             .center { 
                 text-align: center;
                 white-space: nowrap;
+                font-weight: bold;
             }
             .center .day-date {
-                font-size: 30px;
             }
             .center .month {
                 font-size: 20px;
@@ -673,13 +706,12 @@
             .right { 
                 text-align: right;
                 white-space: nowrap;
-                font-size: 30px;
             }
         </style>
     </head>
     <body>
         <div class="container">
-            <div class="left">${data.caseItems[0]?.type || 'N/A'}</div>
+            <div class="left">${typeText || 'N/A'}</div>
             <div class="center">
                 <div class="day-date">${formattedDate.dayAndDate}</div>
                 <div class="month">${formattedDate.month}</div>
@@ -801,7 +833,15 @@
         width: '112mm',
         height: '297mm'
     }) => {
-        const encodedHTML = btoa(htmlContent);
+        // UTF-8 safe base64 encoding
+        const utf8ToBase64 = (str) => {
+            return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g,
+                function toSolidBytes(match, p1) {
+                    return String.fromCharCode('0x' + p1);
+                }));
+        };
+
+        const encodedHTML = utf8ToBase64(htmlContent);
         const payload = {
             page: {
                 pdf: {
