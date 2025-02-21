@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Lab Sheet Extractor
 // @namespace    http://tampermonkey.net/
-// @version      1.5
+// @version      1.6
 // @description  Extracts and prints lab sheet information from 3Shape
 // @author       You
 // @match        https://lms.3shape.com/ui/CaseRecord/*
