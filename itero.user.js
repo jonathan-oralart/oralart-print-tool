@@ -59,19 +59,62 @@
                     const iframeContent = iframe.contentDocument.documentElement.outerHTML;
                     console.log("4. iframeContent");
 
-                    try {
-                        const pdfResponse = await generatePDF(iframeContent);
-                        console.log('5. pdfResponse');
-                        downloadPDF(pdfResponse, 'itero_print.pdf');
-                        console.log('6. Downloaded PDF');
-                    } catch (error) {
-                        console.error('Error generating PDF:', error);
-                    }
-                    console.log('7. Returning from PDF generation');
+                    // Store the content for later use
+                    const contentToProcess = {
+                        html: iframeContent,
+                        processed: false,
+                        processing: false,
+                        attempts: 0,
+                        maxAttempts: 10
+                    };
+
+                    // Start the retry mechanism
+                    startPdfRetryMechanism(contentToProcess);
+
                     return;
                 }
                 await new Promise(resolve => setTimeout(resolve, 1));
             }
+        };
+
+        // Retry mechanism to handle PDF generation
+        const startPdfRetryMechanism = (contentToProcess) => {
+            const retryInterval = setInterval(async () => {
+                // If already processed or max attempts reached, stop retrying
+                if (contentToProcess.processed || contentToProcess.attempts >= contentToProcess.maxAttempts) {
+                    clearInterval(retryInterval);
+                    return;
+                }
+
+                // Skip if we're currently processing
+                if (contentToProcess.processing) {
+                    return;
+                }
+
+                contentToProcess.attempts++;
+                contentToProcess.processing = true;
+                console.log(`Attempt ${contentToProcess.attempts} to generate PDF...`);
+
+                try {
+                    const pdfResponse = await generatePDF(contentToProcess.html);
+
+                    // Double-check we haven't already processed this in another attempt
+                    if (!contentToProcess.processed) {
+                        console.log('5. pdfResponse');
+                        downloadPDF(pdfResponse, 'itero_print.pdf');
+                        console.log('6. Downloaded PDF');
+
+                        // Mark as processed to stop retries
+                        contentToProcess.processed = true;
+                        clearInterval(retryInterval);
+                    }
+                } catch (error) {
+                    console.error(`Error generating PDF (attempt ${contentToProcess.attempts}):`, error);
+                    // We'll retry on the next interval
+                } finally {
+                    contentToProcess.processing = false;
+                }
+            }, 2000); // Check every 2 seconds
         };
 
         findPrintApp();
