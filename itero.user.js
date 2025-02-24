@@ -17,59 +17,61 @@
 (function () {
     'use strict';
 
-    console.log('Itero Print');
+    console.log('0. Itero Print');
 
     document.addEventListener('DOMContentLoaded', () => {
-        let attempts = 0;
-        const maxAttempts = 100; // 10 seconds / 100ms = 100 attempts
+        // Find the print app with retry logic
+        const findPrintApp = async () => {
+            for (let attempts = 0; attempts < 100; attempts++) {
+                const printApp = document.querySelector('eup-print-rx-app');
+                if (printApp) {
+                    console.log('1. Found print app:', printApp);
+                    watchForIframe(printApp);
+                    return;
+                }
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+            console.log('Gave up finding print app after 10 seconds');
+        };
 
-        const findPrintApp = () => {
-            const printApp = document.querySelector('eup-print-rx-app');
-            if (printApp) {
-                console.log('Found print app:', printApp);
-                // Add mutation observer for the print app
-                const observer = new MutationObserver((mutations) => {
-                    for (const mutation of mutations) {
-                        for (const node of mutation.addedNodes) {
-                            if (node.tagName === 'IFRAME') {
-                                console.log('Found iframe:', node);
-
-                                // Wait for iframe content to load
-                                const checkIframeContent = () => {
-                                    const body = node.contentDocument?.body;
-                                    if (body && body.children.length > 0) {
-                                        console.log('Iframe body loaded with content');
-                                        const iframeContent = node.contentDocument.documentElement.outerHTML;
-                                        console.log("iframeContent", iframeContent);
-                                        generatePDF(iframeContent)
-                                            .then(pdfResponse => {
-                                                downloadPDF(pdfResponse, 'itero_print.pdf');
-                                            })
-                                            .catch(error => {
-                                                console.error('Error generating PDF:', error);
-                                            });
-                                    } else {
-                                        setTimeout(checkIframeContent, 1);
-                                    }
-                                };
-
-                                checkIframeContent();
-                            }
+        // Watch for iframe being added to the print app
+        const watchForIframe = (printApp) => {
+            const observer = new MutationObserver((mutations) => {
+                for (const mutation of mutations) {
+                    for (const node of mutation.addedNodes) {
+                        if (node.tagName === 'IFRAME') {
+                            console.log('2. Found iframe:');
+                            waitForIframeContent(node);
                         }
                     }
-                });
+                }
+            });
 
-                observer.observe(printApp, { childList: true, subtree: true });
-                return;
+            observer.observe(printApp, { childList: true, subtree: true });
+        };
+
+        // Wait for iframe content to load and process it
+        const waitForIframeContent = async (iframe) => {
+            while (true) {
+                const body = iframe.contentDocument?.body;
+                if (body && body.children.length > 0) {
+                    console.log('3. Iframe body loaded with content');
+                    const iframeContent = iframe.contentDocument.documentElement.outerHTML;
+                    console.log("4. iframeContent");
+
+                    try {
+                        const pdfResponse = await generatePDF(iframeContent);
+                        console.log('5. pdfResponse');
+                        downloadPDF(pdfResponse, 'itero_print.pdf');
+                        console.log('6. Downloaded PDF');
+                    } catch (error) {
+                        console.error('Error generating PDF:', error);
+                    }
+                    console.log('7. Returning from PDF generation');
+                    return;
+                }
+                await new Promise(resolve => setTimeout(resolve, 1));
             }
-
-            attempts++;
-            if (attempts >= maxAttempts) {
-                console.log('Gave up finding print app after 10 seconds');
-                return;
-            }
-
-            setTimeout(findPrintApp, 100);
         };
 
         findPrintApp();
@@ -120,7 +122,7 @@
             }
         };
 
-        return new Promise((resolve, reject) => {
+        const response = await new Promise((resolve, reject) => {
             GM_xmlhttpRequest({
                 method: 'POST',
                 url: 'https://api.doppio.sh/v1/render/pdf/direct',
@@ -142,6 +144,7 @@
                 }
             });
         });
+        return response;
     };
 
     const downloadPDF = (pdfResponse, filename) => {
