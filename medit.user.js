@@ -112,13 +112,89 @@
             // Get the element with all styles inlined
             const htmlContent = getElementWithStyles('#printable-body');
 
-            // Generate PDF
-            const pdfResponse = await generatePDF(htmlContent);
-            console.log("PDF generated successfully");
+            // Open a preview in a new tab
+            const previewWindow = window.open();
+            previewWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Print Preview</title>
+                    <style>
+                        body { 
+                            font-family: Arial, sans-serif;
+                            padding: 20px;
+                        }
+                        .preview-header {
+                            background: #f0f0f0;
+                            padding: 10px;
+                            margin-bottom: 20px;
+                            border-radius: 4px;
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                        }
+                        .preview-header button {
+                            padding: 8px 16px;
+                            background: #4285f4;
+                            color: white;
+                            border: none;
+                            border-radius: 4px;
+                            cursor: pointer;
+                        }
+                        .preview-header button:hover {
+                            background: #3367d6;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="preview-header">
+                        <h2>Print Preview</h2>
+                        <button id="continue-print">Continue with PDF Generation</button>
+                    </div>
+                    <div id="preview-content">
+                        ${htmlContent}
+                    </div>
+                    <script>
+                        document.getElementById('continue-print').addEventListener('click', function() {
+                            window.opener.postMessage('continue-pdf-generation', '*');
+                        });
+                    </script>
+                </body>
+                </html>
+            `);
+            previewWindow.document.close();
 
-            // Download the PDF
-            downloadPDF(pdfResponse, 'medit_print.pdf');
-            console.log("PDF downloaded");
+            // Listen for the message from the preview window
+            const generatePdfPromise = new Promise((resolve) => {
+                window.addEventListener('message', async function messageHandler(event) {
+                    if (event.data === 'continue-pdf-generation') {
+                        window.removeEventListener('message', messageHandler);
+
+                        try {
+                            // Generate PDF
+                            const pdfResponse = await generatePDF(htmlContent);
+                            console.log("PDF generated successfully");
+
+                            // Download the PDF
+                            downloadPDF(pdfResponse, 'medit_print.pdf');
+                            console.log("PDF downloaded");
+
+                            resolve();
+                        } catch (error) {
+                            console.error("Error generating PDF:", error);
+                            resolve(); // Resolve anyway to prevent hanging
+                        }
+                    }
+                });
+            });
+
+            // Also allow automatic generation if the user closes the preview
+            previewWindow.addEventListener('beforeunload', () => {
+                generatePdfPromise.then(() => {
+                    console.log("Preview window closed");
+                });
+            });
+
         } catch (error) {
             console.error("Error processing printable content:", error);
         }

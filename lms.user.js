@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LMS
 // @namespace    http://tampermonkey.net/
-// @version      1.6
+// @version      1.7
 // @description  Extracts and prints lab sheet information from 3Shape
 // @author       You
 // @match        https://lms.3shape.com/ui/CaseRecord/*
@@ -23,7 +23,7 @@
 (function () {
     'use strict';
 
-    console.log(`Version 1.4`);
+    console.log(`Version 1.7`);
     // Add print button to the page
     function addPrintButton() {
         const button = document.createElement('button');
@@ -669,58 +669,62 @@
         }
 
         return `
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <style>
-            body {
-                margin: 0;
-                padding: 10px;
-                font-family: monospace;
-            }
-            .container {
-                display: grid;
-                grid-template-columns: 7fr 6fr 6fr;
-                width: 100%;
-                align-items: start;
-                font-size: 28px;
-            }
-            .left { 
-                text-align: left;
-                word-break: normal;
-                white-space: pre-line;
-                line-height: 1.2;
-            }
-            .center { 
-                text-align: center;
-                white-space: nowrap;
-                font-weight: bold;
-            }
-            .center .day-date {
-            }
-            .center .month {
-                font-size: 20px;
-                display: block;
-                line-height: 1;
-            }
-            .right { 
-                text-align: right;
-                white-space: nowrap;
-            }
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <div class="left">${typeText || 'N/A'}</div>
-            <div class="center">
-                <div class="day-date">${formattedDate.dayAndDate}</div>
-                <div class="month">${formattedDate.month}</div>
-            </div>
-            <div class="right">${data.panNum}</div>
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {
+            margin: 0;
+            padding: 10px;
+            font-family: monospace;
+        }
+        .container {
+            display: flex;
+            width: 100%;
+            align-items: start;
+            font-size: 28px;
+        }
+        .left { 
+            text-align: left;
+            word-break: normal;
+            white-space: pre-line;
+            line-height: 1.2;
+        }
+        .center { 
+            text-align: center;
+            white-space: nowrap;
+            font-weight: bold;
+        }
+        .center .day-date {
+        }
+        .center .month {
+            font-size: 20px;
+            display: block;
+            line-height: 1;
+        }
+        .right { 
+            text-align: right;
+            white-space: nowrap;
+        }
+        .spacer {
+            flex-grow: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="left">${typeText || 'N/A'}</div>
+        <div class="spacer"></div>
+        <div class="center">
+            <div class="day-date">${formattedDate.dayAndDate}</div>
+            <div class="month">${formattedDate.month}</div>
         </div>
-    </body>
-    </html>
-    `;
+        <div class="spacer"></div>
+        <div class="right">${data.panNum}</div>
+    </div>
+</body>
+</html>
+`;
     };
 
     // Keep the downloadPDF function as is
@@ -770,14 +774,14 @@
 
             // Open preview windows
             // openPreviewWindow(workTicketHTML);
-            // openPreviewWindow(labelHTML);
+            openPreviewWindow(labelHTML);
 
             // Download both PDFs
             const workTicketFilename = `OA1_${cachedData.panNum}_workticket.pdf`.replace(/[^a-z0-9_.]/gi, '_');
             const labelFilename = `OA1_${cachedData.panNum}_label.pdf`.replace(/[^a-z0-9_.]/gi, '_');
 
-            downloadPDF(cachedPDFs.workTicket, workTicketFilename);
-            downloadPDF(cachedPDFs.label, labelFilename);
+            // downloadPDF(cachedPDFs.workTicket, workTicketFilename);
+            // downloadPDF(cachedPDFs.label, labelFilename);
 
         } catch (e) {
             console.error('Error in printLabSheet:', e);
