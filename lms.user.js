@@ -711,6 +711,18 @@
             formattedDate = formatDate(dayjs(data.productionLog[data.productionLog.length - 1].rawDate).subtract(1, 'day').toISOString());
         }
 
+        // Generate barcode SVG directly
+        const tempSvg = document.createElement('svg');
+        JsBarcode(tempSvg, data.barcode, {
+            format: "CODE128",
+            width: 2,
+            height: 20,
+            displayValue: false,
+            fontSize: 16,
+            margin: 0
+        });
+        const barcodeSvg = tempSvg.outerHTML;
+
         return `
 <!DOCTYPE html>
 <html>
@@ -726,6 +738,7 @@
             width: 100%;
             align-items: start;
             font-size: 28px;
+            margin-bottom: 10px;
         }
         .left { 
             text-align: left;
@@ -752,6 +765,15 @@
         .spacer {
             flex-grow: 1;
         }
+        .barcode-container {
+            width: 100%;
+            text-align: center;
+            margin-top: 5px;
+        }
+        .barcode-container svg {
+            width: 100%;
+            height: auto;
+        }
     </style>
 </head>
 <body>
@@ -764,6 +786,9 @@
         </div>
         <div class="spacer"></div>
         <div class="right">${data.panNum}</div>
+    </div>
+    <div class="barcode-container">
+        ${barcodeSvg}
     </div>
 </body>
 </html>
