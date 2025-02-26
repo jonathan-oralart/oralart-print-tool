@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LMS
 // @namespace    http://tampermonkey.net/
-// @version      1.9
+// @version      1.10
 // @description  Extracts and prints lab sheet information from 3Shape
 // @author       You
 // @match        https://lms.3shape.com/ui/CaseRecord/*
@@ -23,7 +23,7 @@
 (function () {
     'use strict';
 
-    console.log(`Version 1.9`);
+    console.log(`Version 1.10`);
     // Add print button to the page
     function addPrintButton() {
         const button = document.createElement('button');
@@ -47,7 +47,7 @@
         // Create view labels button
         const viewLabelsButton = document.createElement('button');
         viewLabelsButton.id = 'view-labels-button';
-        viewLabelsButton.textContent = 'View Labels';
+        viewLabelsButton.textContent = 'View Label';
         viewLabelsButton.style.cssText = `
             position: fixed;
             width: 140px;
@@ -133,7 +133,7 @@
                 button.style.cursor = 'pointer';
                 button.onclick = generatePDFs;
 
-                viewLabelsButton.textContent = 'View Labels';
+                viewLabelsButton.textContent = 'View Label';
                 viewLabelsButton.style.background = '#4a4a4a';
                 viewLabelsButton.style.cursor = 'pointer';
                 viewLabelsButton.onclick = viewLabels;
@@ -148,7 +148,7 @@
                 button.style.cursor = 'pointer';
                 button.onclick = downloadPDFs;
 
-                viewLabelsButton.textContent = 'View Labels';
+                viewLabelsButton.textContent = 'View Label';
                 viewLabelsButton.style.background = '#4a4a4a';
                 viewLabelsButton.style.cursor = 'pointer';
                 viewLabelsButton.onclick = viewLabels;
@@ -913,9 +913,10 @@
                 throw new Error('Data or PDFs not yet loaded');
             }
 
-            // Download both PDFs
-            const workTicketFilename = `OA1_${cachedData.panNum}_workticket.pdf`.replace(/[^a-z0-9_.]/gi, '_');
-            const labelFilename = `OA1_${cachedData.panNum}_label.pdf`.replace(/[^a-z0-9_.]/gi, '_');
+            // Use patient name instead of pan number for filenames
+            const sanitizedPatientName = cachedData.patientName.replace(/[^\w\s]/g, '');
+            const workTicketFilename = `${sanitizedPatientName} LMS (work ticket).pdf`;
+            const labelFilename = `${sanitizedPatientName} LMS (label).pdf`;
 
             downloadPDF(cachedPDFs.workTicket, workTicketFilename);
             downloadPDF(cachedPDFs.label, labelFilename);
