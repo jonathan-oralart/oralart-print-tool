@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LMS
 // @namespace    http://tampermonkey.net/
-// @version      1.8
+// @version      1.9
 // @description  Extracts and prints lab sheet information from 3Shape
 // @author       You
 // @match        https://lms.3shape.com/ui/CaseRecord/*
@@ -23,7 +23,7 @@
 (function () {
     'use strict';
 
-    console.log(`Version 1.8`);
+    console.log(`Version 1.9`);
     // Add print button to the page
     function addPrintButton() {
         const button = document.createElement('button');
@@ -43,6 +43,36 @@
             cursor: not-allowed;
             transition: all 0.3s ease;
         `;
+
+        // Create auto-download checkbox
+        const checkboxContainer = document.createElement('div');
+        checkboxContainer.style.cssText = `
+            position: fixed;
+            top: 80px;
+            right: 32px;
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            font-size: 12px;
+            color: #4a4a4a;
+        `;
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.id = 'auto-download-checkbox';
+        checkbox.checked = GM_getValue('auto-download', true); // Default to true
+        checkbox.style.marginRight = '5px';
+
+        checkbox.addEventListener('change', function () {
+            GM_setValue('auto-download', this.checked);
+        });
+
+        const label = document.createElement('label');
+        label.htmlFor = 'auto-download-checkbox';
+        label.textContent = 'Auto-download';
+
+        checkboxContainer.appendChild(checkbox);
+        checkboxContainer.appendChild(label);
 
         // Only add click listener when data is ready
         const updateButtonState = () => {
@@ -78,6 +108,7 @@
         }, 100);
 
         document.body.appendChild(button);
+        document.body.appendChild(checkboxContainer);
         return button;
     }
 
@@ -852,12 +883,18 @@
         }
     };
 
-    // Modify the prefetchData function to only fetch data, not generate PDFs
+    // Modify the prefetchData function to automatically generate PDFs if auto-download is enabled
     const prefetchData = async () => {
         try {
             // Fetch data first
             cachedData = await getData();
             console.log("Data prefetched successfully", cachedData);
+
+            // If auto-download is enabled, automatically generate PDFs
+            const autoDownload = GM_getValue('auto-download', true);
+            if (autoDownload && cachedData) {
+                generatePDFs();
+            }
 
             // Update button state (will be handled by the interval in addPrintButton)
         } catch (e) {
