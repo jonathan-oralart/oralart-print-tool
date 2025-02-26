@@ -44,6 +44,44 @@
             transition: all 0.3s ease;
         `;
 
+        // Create view labels button
+        const viewLabelsButton = document.createElement('button');
+        viewLabelsButton.id = 'view-labels-button';
+        viewLabelsButton.textContent = 'View Labels';
+        viewLabelsButton.style.cssText = `
+            position: fixed;
+            width: 140px;
+            top: 41px;
+            right: 182px;
+            z-index: 10000;
+            padding: 8px 16px;
+            background: #cccccc;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: not-allowed;
+            transition: all 0.3s ease;
+        `;
+
+        // Create view work ticket button
+        const viewWorkTicketButton = document.createElement('button');
+        viewWorkTicketButton.id = 'view-work-ticket-button';
+        viewWorkTicketButton.textContent = 'View Work Ticket';
+        viewWorkTicketButton.style.cssText = `
+            position: fixed;
+            width: 140px;
+            top: 41px;
+            right: 332px;
+            z-index: 10000;
+            padding: 8px 16px;
+            background: #cccccc;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: not-allowed;
+            transition: all 0.3s ease;
+        `;
+
         // Create auto-download checkbox
         const checkboxContainer = document.createElement('div');
         checkboxContainer.style.cssText = `
@@ -81,21 +119,57 @@
                 button.style.background = '#cccccc';
                 button.style.cursor = 'not-allowed';
                 button.onclick = null;
+
+                viewLabelsButton.style.background = '#cccccc';
+                viewLabelsButton.style.cursor = 'not-allowed';
+                viewLabelsButton.onclick = null;
+
+                viewWorkTicketButton.style.background = '#cccccc';
+                viewWorkTicketButton.style.cursor = 'not-allowed';
+                viewWorkTicketButton.onclick = null;
             } else if (cachedData && !cachedPDFs.workTicket && !cachedPDFs.label) {
                 button.textContent = 'Generate PDF';
                 button.style.background = '#4a4a4a';
                 button.style.cursor = 'pointer';
                 button.onclick = generatePDFs;
+
+                viewLabelsButton.textContent = 'View Labels';
+                viewLabelsButton.style.background = '#4a4a4a';
+                viewLabelsButton.style.cursor = 'pointer';
+                viewLabelsButton.onclick = viewLabels;
+
+                viewWorkTicketButton.textContent = 'View Work Ticket';
+                viewWorkTicketButton.style.background = '#4a4a4a';
+                viewWorkTicketButton.style.cursor = 'pointer';
+                viewWorkTicketButton.onclick = viewWorkTicket;
             } else if (cachedData && (cachedPDFs.workTicket || cachedPDFs.label)) {
                 button.textContent = 'Download';
                 button.style.background = '#4a4a4a';
                 button.style.cursor = 'pointer';
                 button.onclick = downloadPDFs;
+
+                viewLabelsButton.textContent = 'View Labels';
+                viewLabelsButton.style.background = '#4a4a4a';
+                viewLabelsButton.style.cursor = 'pointer';
+                viewLabelsButton.onclick = viewLabels;
+
+                viewWorkTicketButton.textContent = 'View Work Ticket';
+                viewWorkTicketButton.style.background = '#4a4a4a';
+                viewWorkTicketButton.style.cursor = 'pointer';
+                viewWorkTicketButton.onclick = viewWorkTicket;
             } else {
                 button.textContent = 'Fetching...';
                 button.style.background = '#cccccc';
                 button.style.cursor = 'not-allowed';
                 button.onclick = null;
+
+                viewLabelsButton.style.background = '#cccccc';
+                viewLabelsButton.style.cursor = 'not-allowed';
+                viewLabelsButton.onclick = null;
+
+                viewWorkTicketButton.style.background = '#cccccc';
+                viewWorkTicketButton.style.cursor = 'not-allowed';
+                viewWorkTicketButton.onclick = null;
             }
         };
 
@@ -108,6 +182,8 @@
         }, 100);
 
         document.body.appendChild(button);
+        document.body.appendChild(viewLabelsButton);
+        document.body.appendChild(viewWorkTicketButton);
         document.body.appendChild(checkboxContainer);
         return button;
     }
@@ -1015,6 +1091,38 @@
         if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
             e.preventDefault(); // Prevent default print dialog
             printLabSheet();
+        }
+    };
+
+    // Add a new function to view labels in a new tab
+    const viewLabels = () => {
+        try {
+            if (!cachedData) {
+                throw new Error('Data not yet loaded');
+            }
+
+            // Generate HTML and open in new tab
+            const labelHTML = generateLabelHTML(cachedData);
+            openPreviewWindow(labelHTML);
+        } catch (e) {
+            console.error('Error viewing labels:', e);
+            showError('Failed to view labels: ' + e.message);
+        }
+    };
+
+    // Add a new function to view work ticket in a new tab
+    const viewWorkTicket = () => {
+        try {
+            if (!cachedData) {
+                throw new Error('Data not yet loaded');
+            }
+
+            // Generate HTML and open in new tab
+            const workTicketHTML = generatePrintHTML(cachedData);
+            openPreviewWindow(workTicketHTML);
+        } catch (e) {
+            console.error('Error viewing work ticket:', e);
+            showError('Failed to view work ticket: ' + e.message);
         }
     };
 

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Itero Print
 // @namespace    http://tampermonkey.net/
-// @version      0.1
+// @version      0.2
 // @description  Interact with blob content
 // @match        https://bff.cloud.myitero.com/*
 // @icon         data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==
