@@ -1,10 +1,11 @@
 // ==UserScript==
 // @name         Print Gmail Narrow
 // @namespace    http://tampermonkey.net/
-// @version      1.0
+// @version      1.1
 // @description  Print Gmail Narrow
 // @author       Jonathan de Wet
 // @match        https://mail.google.com/mail/b/*
+// @match        https://mail.google.com/mail/u/*
 // @icon         data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==
 // @grant        GM_xmlhttpRequest
 // @grant        GM_addStyle
@@ -18,7 +19,7 @@
 (function () {
     'use strict';
 
-    console.log(`Version 1.0`);
+    console.log(`Version 1.1`);
     function addPrintButton() {
         const button = document.createElement('button');
         button.id = 'lab-sheet-button';
@@ -38,6 +39,17 @@
 
         button.addEventListener('click', printGmailNarrow);
         document.body.appendChild(button);
+
+        // Add print-specific CSS to hide UI elements when printing
+        const printStyle = document.createElement('style');
+        printStyle.textContent = `
+            @media print {
+                #lab-sheet-button, #gmail-settings-panel {
+                    display: none !important;
+                }
+            }
+        `;
+        document.head.appendChild(printStyle);
     }
 
     // Keep the downloadPDF function as is
@@ -108,7 +120,20 @@
 
             try {
                 const pdfResponse = await generatePDF(htmlContent);
-                const fileName = 'gmail_narrow.pdf';
+
+                // Get filename from the selector
+                let fileName = '[subject not found] Gmail.pdf';
+                const subjectElement = document.querySelector("body > div.bodycontainer > div > table:nth-child(1) > tbody > tr > td > font:nth-child(1) > b");
+                if (subjectElement && subjectElement.textContent) {
+                    // Clean the subject to make it suitable for a filename
+                    const cleanSubject = subjectElement.textContent
+                        .trim()
+                        .replace(/[\\/:*?"<>|]/g, '_') // Replace invalid filename characters
+                        .substring(0, 100); // Limit length
+
+                    fileName = `${cleanSubject} Gmail.pdf`;
+                }
+
                 downloadPDF(pdfResponse, fileName);
             } finally {
                 // Restore button state
@@ -480,7 +505,7 @@
         }, 2000); // 2 second delay
 
         // Keep the keyboard shortcut listener
-        document.addEventListener('keydown', handleKeyboardShortcut);
+        // document.addEventListener('keydown', handleKeyboardShortcut);
     } else {
     }
 })(); 
