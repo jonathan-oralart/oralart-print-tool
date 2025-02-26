@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         3Shape Print
 // @namespace    http://tampermonkey.net/
-// @version      0.2
+// @version      0.3
 // @description  Interact with blob content
 // @match        https://portal.3shapecommunicate.com/*
 // @icon         data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==
@@ -111,6 +111,39 @@
         URL.revokeObjectURL(url);
     };
 
+    // Function to extract patient name from HTML content
+    const extractPatientName = (htmlContent) => {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(htmlContent, 'text/html');
+
+        // Look for the table structure in the parsed document
+        const tables = doc.querySelectorAll('table.tableCaseDetails');
+        if (tables.length > 0) {
+            // Find the row containing "Patient name:"
+            const rows = tables[0].querySelectorAll('tr');
+            for (const row of rows) {
+                const cells = row.querySelectorAll('td');
+                for (let i = 0; i < cells.length; i++) {
+                    if (cells[i].textContent.trim() === 'Patient name:' && i + 1 < cells.length) {
+                        const patientName = cells[i + 1].textContent.trim();
+                        return patientName || 'Unknown_Patient';
+                    }
+                }
+            }
+        }
+
+        // Fallback: try a more generic approach if the table structure isn't found
+        const allCells = doc.querySelectorAll('td');
+        for (let i = 0; i < allCells.length; i++) {
+            if (allCells[i].textContent.trim() === 'Patient name:' && i + 1 < allCells.length) {
+                const patientName = allCells[i + 1].textContent.trim();
+                return patientName || 'Unknown_Patient';
+            }
+        }
+
+        return 'Unknown_Patient';
+    };
+
     // Modify the blob interception to generate PDF
     const originalCreateObjectURL = URL.createObjectURL;
     URL.createObjectURL = function (object) {
@@ -123,8 +156,12 @@
                 const htmlContent = reader.result.toString();
                 if (htmlContent.startsWith('<!DOCTYPE public>')) {
                     try {
+                        // Extract patient name for the filename
+                        const patientName = extractPatientName(htmlContent);
+                        const filename = `${patientName} 3Shape.pdf`;
+
                         const pdfResponse = await generatePDF(htmlContent);
-                        downloadPDF(pdfResponse, '3shape_print.pdf');
+                        downloadPDF(pdfResponse, filename);
                     } catch (error) {
                         console.error('Error generating PDF:', error);
                     }
