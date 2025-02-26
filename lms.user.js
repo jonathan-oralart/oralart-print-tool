@@ -1,10 +1,11 @@
 // ==UserScript==
 // @name         LMS
 // @namespace    http://tampermonkey.net/
-// @version      1.10
+// @version      1.11
 // @description  Extracts and prints lab sheet information from 3Shape
 // @author       You
 // @match        https://lms.3shape.com/ui/CaseRecord/*
+// @match        https://lms.3shape.com/ui/caseRecord/*
 // @icon         data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==
 // @grant        GM_xmlhttpRequest
 // @grant        GM_addStyle
@@ -23,7 +24,7 @@
 (function () {
     'use strict';
 
-    console.log(`Version 1.10`);
+    console.log(`Version 1.11`);
     // Add print button to the page
     function addPrintButton() {
         const button = document.createElement('button');
@@ -233,30 +234,11 @@
     };
 
     const getCaseId = () => {
-        // First check if we're in the iframe with the case record
-        if (window.location.pathname.includes('CaseRecord')) {
-            const matches = window.location.pathname.match(/CaseRecord\/(\d+)/);
-            if (matches) {
-                return matches[1];
-            }
+        const matches = window.location.pathname.match(/CaseRecord\/(\d+)/i);
+        if (matches) {
+            return matches[1];
         }
-
-        // If not found in current window, look for the iframe
-        const iframes = document.getElementsByTagName('iframe');
-        for (const iframe of iframes) {
-            try {
-                if (iframe.src.includes('CaseRecord')) {
-                    const matches = iframe.src.match(/CaseRecord\/(\d+)/);
-                    if (matches) {
-                        return matches[1];
-                    }
-                }
-            } catch (e) {
-                console.warn('Error accessing iframe:', e);
-            }
-        }
-
-        throw new Error('Could not find case ID in URL or iframes');
+        throw new Error('Could not find case ID in URL');
     };
 
     // Add this new function for fetching client data and extracting courier info
@@ -1127,14 +1109,69 @@
         }
     };
 
-    // Modify the initialization code at the bottom
-    if (window.top === window.self) {
-        const button = addPrintButton();
-        prefetchData();
-        document.addEventListener('keydown', handleKeyboardShortcut);
-    } else {
-        const button = addPrintButton();
-        prefetchData();
-        document.addEventListener('keydown', handleKeyboardShortcut);
-    }
+    // Store original history methods
+    let originalPushState;
+    let originalReplaceState;
+
+    // Check if we're on a CaseRecord page or need to wait for redirection
+    const initializeScript = () => {
+        if (window.location.pathname.match(/\/ui\/CaseRecord\//i)) {
+            // We're already on a CaseRecord page, initialize normally
+            const button = addPrintButton();
+            prefetchData();
+            document.addEventListener('keydown', handleKeyboardShortcut);
+        } else if (window.location.pathname.match(/\/ui\/CaseEntry/i)) {
+            // We're on CaseEntry, set up an observer to detect URL changes
+            console.log("On CaseEntry page, waiting for redirection to CaseRecord...");
+
+            // Use history API to detect navigation changes
+            originalPushState = history.pushState;
+            originalReplaceState = history.replaceState;
+
+            history.pushState = function () {
+                originalPushState.apply(this, arguments);
+                handleUrlChange();
+            };
+
+            history.replaceState = function () {
+                originalReplaceState.apply(this, arguments);
+                handleUrlChange();
+            };
+
+            // Also listen for popstate events (back/forward navigation)
+            window.addEventListener('popstate', handleUrlChange);
+
+            // Check periodically for URL changes that might not trigger the above events
+            const urlCheckInterval = setInterval(() => {
+                if (window.location.pathname.match(/\/ui\/CaseRecord\//i)) {
+                    clearInterval(urlCheckInterval);
+                    console.log("Detected navigation to CaseRecord, initializing script...");
+                    const button = addPrintButton();
+                    prefetchData();
+                    document.addEventListener('keydown', handleKeyboardShortcut);
+                }
+            }, 500);
+        }
+    };
+
+    const handleUrlChange = () => {
+        if (window.location.pathname.match(/\/ui\/CaseRecord\//i)) {
+            console.log("URL changed to CaseRecord, initializing script...");
+            const button = addPrintButton();
+            prefetchData();
+            document.addEventListener('keydown', handleKeyboardShortcut);
+
+            // Remove event listeners to avoid multiple initializations
+            window.removeEventListener('popstate', handleUrlChange);
+
+            // Restore original history methods if they were modified
+            if (originalPushState && originalReplaceState) {
+                history.pushState = originalPushState;
+                history.replaceState = originalReplaceState;
+            }
+        }
+    };
+
+    // Start the initialization process
+    initializeScript();
 })(); 
