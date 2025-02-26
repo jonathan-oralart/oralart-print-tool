@@ -1,11 +1,12 @@
 // ==UserScript==
 // @name         LMS
 // @namespace    http://tampermonkey.net/
-// @version      1.11
+// @version      1.12
 // @description  Extracts and prints lab sheet information from 3Shape
 // @author       You
 // @match        https://lms.3shape.com/ui/CaseRecord/*
 // @match        https://lms.3shape.com/ui/caseRecord/*
+// @match        https://lms.3shape.com/ui/CaseEntry
 // @icon         data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==
 // @grant        GM_xmlhttpRequest
 // @grant        GM_addStyle
@@ -24,7 +25,7 @@
 (function () {
     'use strict';
 
-    console.log(`Version 1.11`);
+    console.log(`Version 1.12`);
     // Add print button to the page
     function addPrintButton() {
         const button = document.createElement('button');
