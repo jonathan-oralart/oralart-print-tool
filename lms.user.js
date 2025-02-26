@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LMS
 // @namespace    http://tampermonkey.net/
-// @version      1.12
+// @version      1.13
 // @description  Extracts and prints lab sheet information from 3Shape
 // @author       You
 // @match        https://lms.3shape.com/ui/CaseRecord/*
@@ -25,7 +25,7 @@
 (function () {
     'use strict';
 
-    console.log(`Version 1.12`);
+    console.log(`Version 1.13`);
     // Add print button to the page
     function addPrintButton() {
         const button = document.createElement('button');
@@ -968,16 +968,29 @@
         }
     };
 
-    // Modify the prefetchData function to automatically generate PDFs if auto-download is enabled
+    // Add this new function to track navigation source
+    const setNavigationSource = (source) => {
+        GM_setValue('navigation-source', source);
+    };
+
+    const getNavigationSource = () => {
+        return GM_getValue('navigation-source', 'direct');
+    };
+
+    // Modify the prefetchData function to check navigation source
     const prefetchData = async () => {
         try {
             // Fetch data first
             cachedData = await getData();
             console.log("Data prefetched successfully", cachedData);
 
-            // If auto-download is enabled, automatically generate PDFs
+            // Check navigation source for auto-download decision
+            const navigationSource = getNavigationSource();
             const autoDownload = GM_getValue('auto-download', true);
-            if (autoDownload && cachedData) {
+
+            // Auto-download if coming from CaseEntry, otherwise respect user setting
+            if ((navigationSource === 'caseEntry') ||
+                (navigationSource === 'direct' && autoDownload)) {
                 generatePDFs();
             }
 
@@ -1119,11 +1132,18 @@
         if (window.location.pathname.match(/\/ui\/CaseRecord\//i)) {
             // We're already on a CaseRecord page, initialize normally
             const button = addPrintButton();
+            // If we don't have a navigation source yet, assume direct
+            if (!getNavigationSource() || getNavigationSource() === '') {
+                setNavigationSource('direct');
+            }
             prefetchData();
             document.addEventListener('keydown', handleKeyboardShortcut);
         } else if (window.location.pathname.match(/\/ui\/CaseEntry/i)) {
             // We're on CaseEntry, set up an observer to detect URL changes
             console.log("On CaseEntry page, waiting for redirection to CaseRecord...");
+
+            // Mark that we're coming from CaseEntry
+            setNavigationSource('caseEntry');
 
             // Use history API to detect navigation changes
             originalPushState = history.pushState;
