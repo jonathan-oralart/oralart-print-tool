@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LMS
 // @namespace    http://tampermonkey.net/
-// @version      1.7
+// @version      1.8
 // @description  Extracts and prints lab sheet information from 3Shape
 // @author       You
 // @match        https://lms.3shape.com/ui/CaseRecord/*
@@ -23,12 +23,12 @@
 (function () {
     'use strict';
 
-    console.log(`Version 1.7`);
+    console.log(`Version 1.8`);
     // Add print button to the page
     function addPrintButton() {
         const button = document.createElement('button');
         button.id = 'lab-sheet-button';
-        button.textContent = 'Loading...';
+        button.textContent = 'Fetching...';
         button.style.cssText = `
             position: fixed;
             width: 140px;
@@ -46,15 +46,26 @@
 
         // Only add click listener when data is ready
         const updateButtonState = () => {
-            if (cachedData && cachedPDFs.workTicket && cachedPDFs.label) {
+            if (cachedPDFs.isGenerating) {
+                button.textContent = 'Waiting...';
+                button.style.background = '#cccccc';
+                button.style.cursor = 'not-allowed';
+                button.onclick = null;
+            } else if (cachedData && !cachedPDFs.workTicket && !cachedPDFs.label) {
+                button.textContent = 'Generate PDF';
+                button.style.background = '#4a4a4a';
+                button.style.cursor = 'pointer';
+                button.onclick = generatePDFs;
+            } else if (cachedData && (cachedPDFs.workTicket || cachedPDFs.label)) {
                 button.textContent = 'Download';
                 button.style.background = '#4a4a4a';
                 button.style.cursor = 'pointer';
-                button.addEventListener('click', printLabSheet);
+                button.onclick = downloadPDFs;
             } else {
-                button.textContent = 'Loading...';
+                button.textContent = 'Fetching...';
                 button.style.background = '#cccccc';
                 button.style.cursor = 'not-allowed';
+                button.onclick = null;
             }
         };
 
@@ -67,6 +78,7 @@
         }, 100);
 
         document.body.appendChild(button);
+        return button;
     }
 
     // Fetch with authentication
@@ -745,7 +757,8 @@
     let cachedData = null;
     let cachedPDFs = {
         workTicket: null,
-        label: null
+        label: null,
+        isGenerating: false  // New property to track PDF generation status
     };
 
     // Add storage handling at the start of your script
@@ -761,40 +774,37 @@
         return apiKey;
     };
 
-    // Modify the printLabSheet function to handle previews and downloads
-    const printLabSheet = async () => {
+    // Modify the printLabSheet function to handle downloads only
+    const downloadPDFs = async () => {
         try {
             if (!cachedData || !cachedPDFs.workTicket || !cachedPDFs.label) {
                 throw new Error('Data or PDFs not yet loaded');
             }
 
-            // Generate HTML content and show previews
-            const workTicketHTML = generatePrintHTML(cachedData);
-            const labelHTML = generateLabelHTML(cachedData);
-
-            // Open preview windows
-            // openPreviewWindow(workTicketHTML);
-            openPreviewWindow(labelHTML);
-
             // Download both PDFs
             const workTicketFilename = `OA1_${cachedData.panNum}_workticket.pdf`.replace(/[^a-z0-9_.]/gi, '_');
             const labelFilename = `OA1_${cachedData.panNum}_label.pdf`.replace(/[^a-z0-9_.]/gi, '_');
 
-            // downloadPDF(cachedPDFs.workTicket, workTicketFilename);
-            // downloadPDF(cachedPDFs.label, labelFilename);
+            downloadPDF(cachedPDFs.workTicket, workTicketFilename);
+            downloadPDF(cachedPDFs.label, labelFilename);
 
         } catch (e) {
-            console.error('Error in printLabSheet:', e);
-            showError('Failed to generate lab sheet: ' + e.message);
+            console.error('Error in downloadPDFs:', e);
+            showError('Failed to download PDFs: ' + e.message);
         }
     };
 
-    // Add a function to fetch data and generate PDFs on page load
-    const prefetchData = async () => {
+    // Add a new function to generate PDFs when button is clicked
+    const generatePDFs = async () => {
         try {
-            // Fetch data first
-            cachedData = await getData();
-            console.log("Data prefetched successfully", cachedData);
+            if (!cachedData) {
+                throw new Error('Data not yet loaded');
+            }
+
+            // Set generating flag
+            cachedPDFs.isGenerating = true;
+
+            // Button state will be updated by the interval
 
             // Generate HTML content
             const workTicketHTML = generatePrintHTML(cachedData);
@@ -816,10 +826,40 @@
 
                 console.log('PDFs generated and cached');
 
+                // Clear generating flag
+                cachedPDFs.isGenerating = false;
+
+                // Automatically download PDFs once generated
+                downloadPDFs();
+
+                // Button state will be updated by the interval
+
             } catch (pdfError) {
                 console.error('PDF generation error:', pdfError);
                 showError('Failed to generate PDFs: ' + pdfError.message);
+
+                // Clear generating flag
+                cachedPDFs.isGenerating = false;
+
+                // Button state will be updated by the interval
             }
+        } catch (e) {
+            console.error('Error generating PDFs:', e);
+            showError('Failed to generate PDFs: ' + e.message);
+
+            // Clear generating flag
+            cachedPDFs.isGenerating = false;
+        }
+    };
+
+    // Modify the prefetchData function to only fetch data, not generate PDFs
+    const prefetchData = async () => {
+        try {
+            // Fetch data first
+            cachedData = await getData();
+            console.log("Data prefetched successfully", cachedData);
+
+            // Update button state (will be handled by the interval in addPrintButton)
         } catch (e) {
             console.error('Error prefetching data:', e);
             showError('Failed to load data: ' + e.message);
@@ -918,11 +958,11 @@
 
     // Modify the initialization code at the bottom
     if (window.top === window.self) {
-        addPrintButton();
+        const button = addPrintButton();
         prefetchData();
         document.addEventListener('keydown', handleKeyboardShortcut);
     } else {
-        addPrintButton();
+        const button = addPrintButton();
         prefetchData();
         document.addEventListener('keydown', handleKeyboardShortcut);
     }
