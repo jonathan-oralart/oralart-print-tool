@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LMS
 // @namespace    http://tampermonkey.net/
-// @version      1.14
+// @version      1.15
 // @description  Extracts and prints lab sheet information from 3Shape
 // @author       You
 // @match        https://lms.3shape.com/ui/CaseRecord/*
@@ -25,7 +25,7 @@
 (function () {
     'use strict';
 
-    console.log(`Version 1.14`);
+    console.log(`Version 1.15`);
     // Add print button to the page
     function addPrintButton() {
         const button = document.createElement('button');
@@ -750,7 +750,6 @@
 
         let formattedDate = { dayAndDate: '', month: '' };
         const porcelainStep = data.productionLog.find(log => log.step.toLowerCase().includes('porcelain'));
-        const qualityStep = data.productionLog.find(log => log.step.toLowerCase().includes('quality'));
 
         const formatDate = (isoDate) => {
             if (!isoDate) return { dayAndDate: '', month: '' };
@@ -780,8 +779,6 @@
 
         if (porcelainStep && porcelainStep.rawDate) {
             formattedDate = formatDate(porcelainStep.rawDate);
-        } else if (qualityStep && qualityStep.rawDate) {
-            formattedDate = formatDate(subtractWorkingDay(qualityStep.rawDate));
         } else if (data.productionLog.length > 0) {
             formattedDate = formatDate(subtractWorkingDay(data.productionLog[data.productionLog.length - 1].rawDate));
         }
