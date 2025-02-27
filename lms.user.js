@@ -685,7 +685,7 @@
                 const type = item.type;
                 // Split tooth numbers by comma and count them
                 const teethCount = item.toothNum
-                    .split(',')
+                    .split(/[,&]/)
                     .length;
 
                 acc[type] = (acc[type] || 0) + teethCount;
