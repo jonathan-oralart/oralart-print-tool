@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LMS
 // @namespace    http://tampermonkey.net/
-// @version      1.13
+// @version      1.14
 // @description  Extracts and prints lab sheet information from 3Shape
 // @author       You
 // @match        https://lms.3shape.com/ui/CaseRecord/*
@@ -25,7 +25,7 @@
 (function () {
     'use strict';
 
-    console.log(`Version 1.13`);
+    console.log(`Version 1.14`);
     // Add print button to the page
     function addPrintButton() {
         const button = document.createElement('button');
@@ -411,321 +411,321 @@
         const barcodeSvg = tempSvg.outerHTML;
 
         return `
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Lab Sheet - ${data.patientName}</title>
-        <style>
-            body { 
-                font-family: Arial, sans-serif;
-                max-width: 800px;
-                margin: 0 auto;
-                line-height: 1.4;
-            }
-            .header-container {
-                display: grid;
-                grid-template-columns: repeat(3, 1fr);
-                gap: 10px;
-                align-items: start;
-                position: relative;
-            }
-            .header-section {
-                text-align: left;
-            }
-            .header-section.center {
-                text-align: center;
-            }
-            .header-section.right {
-                text-align: right;
-            }
-            .company-name {
-                font-size: 16px;
-                font-weight: bold;
-                margin-bottom: 0;
-            }
-            .courier-text, .pan-label {
-                font-size: 18px;
-                font-weight: bold;
-                margin-bottom: 5px;
-                white-space: nowrap;
-            }
-            .barcode-number {
-                font-weight: bold;
-                font-size: 26px;
-            }
-            .pan-container {
-                display: flex;
-                flex-direction: column;
-            }
-            .pan-number {
-                font-size: 26px;
-                font-weight: bold;
-            }
-            .due-date-box {
-                background: #000;
-                color: #fff;
-                padding: 18px 24px;
-                text-align: center;
-                width: 150px;
-                z-index: 1;
-            }
-            .due-date-day {
-                font-size: 54px;
-                font-weight: bold;
-                line-height: 1;
-                margin-bottom: 6px;
-            }
-            .due-date-rest {
-                font-size: 16px;
-                line-height: 1.2;
-            }
-            .info-section {
-            }
-            .info-label {
-                font-size: 12px;
-                color: #666;
-                margin-bottom: 2px;
-            }
-            .info-value {
-                font-size: 32px;
-                font-weight: bold;
-                margin-bottom: 10px;
-            }
-            .section-header {
-                font-weight: bold;
-                border-bottom: 2px solid #000;
-                margin-bottom: 10px;
-                padding-bottom: 5px;
-            }
-            .section-content {
-                border-bottom: 2px solid #000;
-                margin-bottom: 20px;
-                padding-bottom: 10px;
-            }
-            .details-table {
-                width: 100%;
-                border-collapse: collapse;
-                margin: 15px 0;
-            }
-            .details-table th {
-                border-bottom: 2px solid #000;
-                padding: 6px 8px;
-                text-align: left;
-                font-weight: bold;
-                border-top: none;
-                font-size: min(100cqw, 14px);
-                white-space: nowrap;
-            }
-            .details-table td {
-                padding: 6px 8px;
-                text-align: left;
-                font-size: 14px;
-                border-bottom: 1px solid #e0e0e0;
-            }
-            .schedule-table {
-                width: 100%;
-                border-collapse: collapse;
-                font-size: 14px;
-            }
-            .schedule-table tr {
-                border-bottom: 1px solid #e0e0e0;
-            }
-            .schedule-table td {
-                padding: 6px 8px;
-                vertical-align: top;
-            }
-            .schedule-date {
-                font-weight: bold;
-            }
-            @media print {
-                @page { margin: 0.5cm; }
-                body { print-color-adjust: exact; }
-            }
-            .section-title {
-                font-weight: bold;
-                font-size: 16px;
-                border-bottom: 2px solid #000;
-                margin-bottom: 10px;
-                padding-bottom: 5px;
-            }
-            .comments-box {
-                margin-bottom: 20px;
-            }
-            .comments-box h3 {
-                margin-bottom: 0;
-            }
-            .comments-content {
-                border-top: 2px solid #000;
-                padding-top: 10px;
-                font-weight: bold;
-            }
-            .enclosed-box {
-                margin-bottom: 20px;
-            }
-            .doctor-preferences {
-                margin-bottom: 20px;
-            }
-            .doctor-preferences h3 {
-                margin-bottom: 0;
-                padding: 0;
-            }
-            .doctor-preferences > div {
-                border-top: 2px solid #000;
-                padding: 10px 0;
-            }
-            .schedule-table th {
-                text-align: left;
-                padding: 6px 8px;
-                font-weight: bold;
-                border-bottom: 2px solid #000;
-            }
-            .phone-label {
-                color: #666;
-                font-size: 12px;
-                margin-bottom: 2px;
-            }
-            .phone-value {
-                font-size: 16px;
-                font-weight: bold;
-                margin-bottom: 10px;
-            }
-            .enclosed-box h3 {
-                margin-bottom: 0px;
-                padding: 0;
-            }
-            .enclosed-box > div {
-                border-top: 2px solid #000;
-                padding: 10px 0;
-                margin-top: 0;
-            }
-            .production-schedule h3 {
-                display: none;
-            }
-            .schedule-table thead tr th {
-                border-bottom: 2px solid #000;
-                border-top: none;
-            }
-            .schedule-table td:first-child {
-                font-weight: bold;
-            }
-            #barcode {
-                width: 200px;
-                height: 50px;
-            }
-        </style>
-    </head>
-    <body>
-        <div class="header-container">
-            <div class="header-section">
-                <div class="company-name">Southern Cross Dental</div>
-                ${barcodeSvg}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Lab Sheet - ${data.patientName}</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.4;
+        }
+        .header-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            align-items: start;
+            position: relative;
+        }
+        .header-section {
+            text-align: left;
+        }
+        .header-section.center {
+            text-align: center;
+        }
+        .header-section.right {
+            text-align: right;
+        }
+        .company-name {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 0;
+        }
+        .courier-text, .pan-label {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            white-space: nowrap;
+        }
+        .barcode-number {
+            font-weight: bold;
+            font-size: 26px;
+        }
+        .pan-container {
+            display: flex;
+            flex-direction: column;
+        }
+        .pan-number {
+            font-size: 26px;
+            font-weight: bold;
+        }
+        .due-date-box {
+            background: #000;
+            color: #fff;
+            padding: 18px 24px;
+            text-align: center;
+            width: 150px;
+            z-index: 1;
+        }
+        .due-date-day {
+            font-size: 54px;
+            font-weight: bold;
+            line-height: 1;
+            margin-bottom: 6px;
+        }
+        .due-date-rest {
+            font-size: 16px;
+            line-height: 1.2;
+        }
+        .info-section {
+        }
+        .info-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 2px;
+        }
+        .info-value {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .section-header {
+            font-weight: bold;
+            border-bottom: 2px solid #000;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+        }
+        .section-content {
+            border-bottom: 2px solid #000;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+        }
+        .details-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        .details-table th {
+            border-bottom: 2px solid #000;
+            padding: 6px 8px;
+            text-align: left;
+            font-weight: bold;
+            border-top: none;
+            font-size: min(100cqw, 14px);
+            white-space: nowrap;
+        }
+        .details-table td {
+            padding: 6px 8px;
+            text-align: left;
+            font-size: 14px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .schedule-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        .schedule-table tr {
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .schedule-table td {
+            padding: 6px 8px;
+            vertical-align: top;
+        }
+        .schedule-date {
+            font-weight: bold;
+        }
+        @media print {
+            @page { margin: 0.5cm; }
+            body { print-color-adjust: exact; }
+        }
+        .section-title {
+            font-weight: bold;
+            font-size: 16px;
+            border-bottom: 2px solid #000;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+        }
+        .comments-box {
+            margin-bottom: 20px;
+        }
+        .comments-box h3 {
+            margin-bottom: 0;
+        }
+        .comments-content {
+            border-top: 2px solid #000;
+            padding-top: 10px;
+            font-weight: bold;
+        }
+        .enclosed-box {
+            margin-bottom: 20px;
+        }
+        .doctor-preferences {
+            margin-bottom: 20px;
+        }
+        .doctor-preferences h3 {
+            margin-bottom: 0;
+            padding: 0;
+        }
+        .doctor-preferences > div {
+            border-top: 2px solid #000;
+            padding: 10px 0;
+        }
+        .schedule-table th {
+            text-align: left;
+            padding: 6px 8px;
+            font-weight: bold;
+            border-bottom: 2px solid #000;
+        }
+        .phone-label {
+            color: #666;
+            font-size: 12px;
+            margin-bottom: 2px;
+        }
+        .phone-value {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .enclosed-box h3 {
+            margin-bottom: 0px;
+            padding: 0;
+        }
+        .enclosed-box > div {
+            border-top: 2px solid #000;
+            padding: 10px 0;
+            margin-top: 0;
+        }
+        .production-schedule h3 {
+            display: none;
+        }
+        .schedule-table thead tr th {
+            border-bottom: 2px solid #000;
+            border-top: none;
+        }
+        .schedule-table td:first-child {
+            font-weight: bold;
+        }
+        #barcode {
+            width: 200px;
+            height: 50px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header-container">
+        <div class="header-section">
+            <div class="company-name">${data.clientInfo}</div>
+            ${barcodeSvg}
+        </div>
+        <div class="header-section center">
+            <div class="courier-text">${data.courierInfo || 'No Courier Specified'}</div>
+            <div class="barcode-number">${data.barcode}</div>
+        </div>
+        <div class="header-section right">
+            <div class="pan-container">
+                <div class="pan-label">Pan #</div>
+                <div class="pan-number">${data.panNum}</div>
             </div>
-            <div class="header-section center">
-                <div class="courier-text">${data.courierInfo || 'No Courier Specified'}</div>
-                <div class="barcode-number">${data.barcode}</div>
+        </div>
+    </div>
+
+    <div style="display: flex">
+        <div class="left-info-container" style="flex: 1;">
+            <div class="info-section">
+                <div class="info-label">Doctor</div>
+                <div class="info-value">${data.doctorName}</div>
             </div>
-            <div class="header-section right">
-                <div class="pan-container">
-                    <div class="pan-label">Pan #</div>
-                    <div class="pan-number">${data.panNum}</div>
-                </div>
+
+            <div class="info-section">
+                <div class="info-label">Patient</div>
+                <div class="info-value">${data.patientName}</div>
+            </div>
+
+            <div class="info-section">
+                <div class="phone-label">Phone</div>
+                <div class="phone-value">${data.phone}</div>
             </div>
         </div>
 
-        <div style="display: flex">
-            <div class="left-info-container" style="flex: 1;">
-                <div class="info-section">
-                    <div class="info-label">Doctor</div>
-                    <div class="info-value">${data.doctorName}</div>
-                </div>
-
-                <div class="info-section">
-                    <div class="info-label">Patient</div>
-                    <div class="info-value">${data.patientName}</div>
-                </div>
-
-                <div class="info-section">
-                    <div class="phone-label">Phone</div>
-                    <div class="phone-value">${data.phone}</div>
-                </div>
-            </div>
-
-            <div class="right-info-container" style="display: flex; flex-direction: column; ">
-                <div>
-                    <div class="due-date-box">
-                        <div class="due-date-day">${dueDateTime.day}</div>
-                        <div class="due-date-rest">${dueDateTime.rest}</div>
-                    </div>
+        <div class="right-info-container" style="display: flex; flex-direction: column; ">
+            <div>
+                <div class="due-date-box">
+                    <div class="due-date-day">${dueDateTime.day}</div>
+                    <div class="due-date-rest">${dueDateTime.rest}</div>
                 </div>
             </div>
         </div>
+    </div>
 
-        <div>Total Units: ${data.caseItems.length}</div>
+    <div>Total Units: ${data.caseItems.length}</div>
 
-        <table class="details-table">
+    <table class="details-table">
+        <thead>
+            <tr>
+                <th>Type</th>
+                <th>Tooth #</th>
+                <th>Description</th>
+                <th>Shade</th>
+                <th>Qty</th>
+            </tr>
+        </thead>
+        <tbody>
+            ${data.caseItems.map(item => `
+                <tr>
+                    <td>${item.type}</td>
+                    <td>${item.toothNum}</td>
+                    <td>${item.item}</td>
+                    <td>${item.shade}</td>
+                    <td>1</td>
+                </tr>
+            `).join('')}
+        </tbody>
+    </table>
+
+    <div class="comments-box">
+        <h3>Comments</h3>
+        <div class="comments-content">${data.comments}</div>
+    </div>
+
+    <div class="enclosed-box">
+        <h3>Enclosed</h3>
+        <div>${data.enclosed}</div>
+    </div>
+
+    <div class="doctor-preferences">
+        <h3>Doctor Preferences</h3>
+        <div>
+            ${data.doctorPreferences.map(pref => `<div>${pref}</div>`).join('')}
+        </div>
+    </div>
+
+    <div class="production-schedule">
+        <h3>Production Schedule</h3>
+        <table class="schedule-table">
             <thead>
                 <tr>
-                    <th>Type</th>
-                    <th>Tooth #</th>
-                    <th>Description</th>
-                    <th>Shade</th>
-                    <th>Qty</th>
+                    <th style="width: 80px">Deadline</th>
+                    <th style="width: 180px">Step</th>
+                    <th>Tech</th>
                 </tr>
             </thead>
             <tbody>
-                ${data.caseItems.map(item => `
+                ${data.productionLog.map(log => `
                     <tr>
-                        <td>${item.type}</td>
-                        <td>${item.toothNum}</td>
-                        <td>${item.item}</td>
-                        <td>${item.shade}</td>
-                        <td>1</td>
+                        <td>${formatDate(log.date)}</td>
+                        <td>${log.step}</td>
+                        <td>${log.tech}</td>
                     </tr>
                 `).join('')}
             </tbody>
         </table>
-
-        <div class="comments-box">
-            <h3>Comments</h3>
-            <div class="comments-content">${data.comments}</div>
-        </div>
-
-        <div class="enclosed-box">
-            <h3>Enclosed</h3>
-            <div>${data.enclosed}</div>
-        </div>
-
-        <div class="doctor-preferences">
-            <h3>Doctor Preferences</h3>
-            <div>
-                ${data.doctorPreferences.map(pref => `<div>${pref}</div>`).join('')}
-            </div>
-        </div>
-
-        <div class="production-schedule">
-            <h3>Production Schedule</h3>
-            <table class="schedule-table">
-                <thead>
-                    <tr>
-                        <th style="width: 80px">Deadline</th>
-                        <th style="width: 180px">Step</th>
-                        <th>Tech</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${data.productionLog.map(log => `
-                        <tr>
-                            <td>${formatDate(log.date)}</td>
-                            <td>${log.step}</td>
-                            <td>${log.tech}</td>
-                        </tr>
-                    `).join('')}
-                </tbody>
-            </table>
-        </div>
-    </body>
-    </html>
-    `;
+    </div>
+</body>
+</html>
+`;
     };
 
     const generateLabelHTML = (data) => {
@@ -762,12 +762,28 @@
             };
         };
 
+        // Function to subtract one working day (skipping weekends)
+        const subtractWorkingDay = (date) => {
+            // Start by subtracting one day
+            let result = dayjs(date).subtract(1, 'day');
+
+            // If it's a weekend (Saturday = 6, Sunday = 0), subtract more days
+            const dayOfWeek = result.day();
+            if (dayOfWeek === 0) { // Sunday
+                result = result.subtract(2, 'day'); // Go back to Friday
+            } else if (dayOfWeek === 6) { // Saturday
+                result = result.subtract(1, 'day'); // Go back to Friday
+            }
+
+            return result.toISOString();
+        };
+
         if (porcelainStep && porcelainStep.rawDate) {
             formattedDate = formatDate(porcelainStep.rawDate);
         } else if (qualityStep && qualityStep.rawDate) {
-            formattedDate = formatDate(dayjs(qualityStep.rawDate).subtract(1, 'day').toISOString());
+            formattedDate = formatDate(subtractWorkingDay(qualityStep.rawDate));
         } else if (data.productionLog.length > 0) {
-            formattedDate = formatDate(dayjs(data.productionLog[data.productionLog.length - 1].rawDate).subtract(1, 'day').toISOString());
+            formattedDate = formatDate(subtractWorkingDay(data.productionLog[data.productionLog.length - 1].rawDate));
         }
 
         // Generate barcode SVG directly
@@ -968,15 +984,6 @@
         }
     };
 
-    // Add this new function to track navigation source
-    const setNavigationSource = (source) => {
-        GM_setValue('navigation-source', source);
-    };
-
-    const getNavigationSource = () => {
-        return GM_getValue('navigation-source', 'direct');
-    };
-
     // Modify the prefetchData function to check navigation source
     const prefetchData = async () => {
         try {
@@ -984,13 +991,9 @@
             cachedData = await getData();
             console.log("Data prefetched successfully", cachedData);
 
-            // Check navigation source for auto-download decision
-            const navigationSource = getNavigationSource();
+            // Only auto-download if checkbox is checked
             const autoDownload = GM_getValue('auto-download', true);
-
-            // Auto-download if coming from CaseEntry, otherwise respect user setting
-            if ((navigationSource === 'caseEntry') ||
-                (navigationSource === 'direct' && autoDownload)) {
+            if (autoDownload) {
                 generatePDFs();
             }
 
@@ -1132,18 +1135,11 @@
         if (window.location.pathname.match(/\/ui\/CaseRecord\//i)) {
             // We're already on a CaseRecord page, initialize normally
             const button = addPrintButton();
-            // If we don't have a navigation source yet, assume direct
-            if (!getNavigationSource() || getNavigationSource() === '') {
-                setNavigationSource('direct');
-            }
             prefetchData();
             document.addEventListener('keydown', handleKeyboardShortcut);
         } else if (window.location.pathname.match(/\/ui\/CaseEntry/i)) {
             // We're on CaseEntry, set up an observer to detect URL changes
             console.log("On CaseEntry page, waiting for redirection to CaseRecord...");
-
-            // Mark that we're coming from CaseEntry
-            setNavigationSource('caseEntry');
 
             // Use history API to detect navigation changes
             originalPushState = history.pushState;
