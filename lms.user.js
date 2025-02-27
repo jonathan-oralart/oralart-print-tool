@@ -326,7 +326,7 @@
                 type: productLookup[item.Item] || "",
                 toothNum: item.ToothNum,
                 item: item.Item,
-                shade: item.Shade || 'N/A'
+                shade: item.Shade || ''
             }));
 
             // Format production log data
@@ -353,7 +353,6 @@
                 phone: caseData.clientPhone,
                 caseItems,
                 comments: caseData.specialInstruction || '',
-                enclosed: caseData.enclosed.map(e => `${e.quantity}x ${e.name}`).join(', ') || '',
                 productionLog,
                 dueDate: formatAPIDate(caseData.dueDate),
                 shipDate: formatAPIDate(caseData.shipDate),
@@ -464,9 +463,9 @@
         .due-date-box {
             background: #000;
             color: #fff;
-            padding: 18px 24px;
+            padding: 15px;
             text-align: center;
-            width: 150px;
+            width: 115px;
             z-index: 1;
         }
         .due-date-day {
@@ -479,8 +478,6 @@
             font-size: 16px;
             line-height: 1.2;
         }
-        .info-section {
-        }
         .info-label {
             font-size: 12px;
             color: #666;
@@ -490,17 +487,6 @@
             font-size: 32px;
             font-weight: bold;
             margin-bottom: 10px;
-        }
-        .section-header {
-            font-weight: bold;
-            border-bottom: 2px solid #000;
-            margin-bottom: 10px;
-            padding-bottom: 5px;
-        }
-        .section-content {
-            border-bottom: 2px solid #000;
-            margin-bottom: 20px;
-            padding-bottom: 10px;
         }
         .details-table {
             width: 100%;
@@ -531,22 +517,13 @@
             border-bottom: 1px solid #e0e0e0;
         }
         .schedule-table td {
-            padding: 6px 8px;
+            padding: 4px 8px;
             vertical-align: top;
-        }
-        .schedule-date {
-            font-weight: bold;
+            line-height: 1;
         }
         @media print {
             @page { margin: 0.5cm; }
             body { print-color-adjust: exact; }
-        }
-        .section-title {
-            font-weight: bold;
-            font-size: 16px;
-            border-bottom: 2px solid #000;
-            margin-bottom: 10px;
-            padding-bottom: 5px;
         }
         .comments-box {
             margin-bottom: 20px;
@@ -558,9 +535,6 @@
             border-top: 2px solid #000;
             padding-top: 10px;
             font-weight: bold;
-        }
-        .enclosed-box {
-            margin-bottom: 20px;
         }
         .doctor-preferences {
             margin-bottom: 20px;
@@ -585,18 +559,9 @@
             margin-bottom: 2px;
         }
         .phone-value {
-            font-size: 16px;
+            font-size: 20px;
             font-weight: bold;
             margin-bottom: 10px;
-        }
-        .enclosed-box h3 {
-            margin-bottom: 0px;
-            padding: 0;
-        }
-        .enclosed-box > div {
-            border-top: 2px solid #000;
-            padding: 10px 0;
-            margin-top: 0;
         }
         .production-schedule h3 {
             display: none;
@@ -607,10 +572,6 @@
         }
         .schedule-table td:first-child {
             font-weight: bold;
-        }
-        #barcode {
-            width: 200px;
-            height: 50px;
         }
     </style>
 </head>
@@ -633,7 +594,7 @@
     </div>
 
     <div style="display: flex">
-        <div class="left-info-container" style="flex: 1;">
+        <div class="left-info-container" style="flex: 1; margin-right: 5px;">
             <div class="info-section">
                 <div class="info-label">Doctor</div>
                 <div class="info-value">${data.doctorName}</div>
@@ -665,21 +626,17 @@
     <table class="details-table">
         <thead>
             <tr>
-                <th>Type</th>
                 <th>Tooth #</th>
                 <th>Description</th>
                 <th>Shade</th>
-                <th>Qty</th>
             </tr>
         </thead>
         <tbody>
             ${data.caseItems.map(item => `
                 <tr>
-                    <td>${item.type}</td>
                     <td>${item.toothNum}</td>
                     <td>${item.item}</td>
                     <td>${item.shade}</td>
-                    <td>1</td>
                 </tr>
             `).join('')}
         </tbody>
@@ -688,11 +645,6 @@
     <div class="comments-box">
         <h3>Comments</h3>
         <div class="comments-content">${data.comments}</div>
-    </div>
-
-    <div class="enclosed-box">
-        <h3>Enclosed</h3>
-        <div>${data.enclosed}</div>
     </div>
 
     <div class="doctor-preferences">
@@ -708,8 +660,7 @@
             <thead>
                 <tr>
                     <th style="width: 80px">Deadline</th>
-                    <th style="width: 180px">Step</th>
-                    <th>Tech</th>
+                    <th>Step</th>
                 </tr>
             </thead>
             <tbody>
@@ -717,7 +668,6 @@
                     <tr>
                         <td>${formatDate(log.date)}</td>
                         <td>${log.step}</td>
-                        <td>${log.tech}</td>
                     </tr>
                 `).join('')}
             </tbody>
