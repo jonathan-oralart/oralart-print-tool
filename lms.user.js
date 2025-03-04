@@ -839,6 +839,9 @@
         isGenerating: false  // New property to track PDF generation status
     };
 
+    // Add a flag to track if we're already fetching data
+    let isFetchingData = false;
+
     // Add storage handling at the start of your script
     const getStoredApiKey = () => {
         const apiKey = GM_getValue('doppio-apiKey', '');
@@ -931,9 +934,16 @@
         }
     };
 
-    // Modify the prefetchData function to check navigation source
+    // Modify the prefetchData function to use the flag
     const prefetchData = async () => {
+        // If already fetching, don't start another fetch
+        if (isFetchingData) {
+            console.log("Already fetching data, skipping duplicate request");
+            return;
+        }
+
         try {
+            isFetchingData = true;
             // Fetch data first
             cachedData = await getData();
             console.log("Data prefetched successfully", cachedData);
@@ -948,6 +958,8 @@
         } catch (e) {
             console.error('Error prefetching data:', e);
             showError('Failed to load data: ' + e.message);
+        } finally {
+            isFetchingData = false;
         }
     };
 
@@ -1082,8 +1094,19 @@
         if (window.location.pathname.match(/\/ui\/CaseRecord\//i)) {
             // We're already on a CaseRecord page, initialize normally
             const button = addPrintButton();
-            prefetchData();
+
+            // Check if caseMain is already present
+            const caseMainPresent = document.getElementById('caseMain');
+
+            // Only prefetch data directly if caseMain is already present
+            if (caseMainPresent) {
+                prefetchData();
+            }
+
             document.addEventListener('keydown', handleKeyboardShortcut);
+
+            // Add mutation observer to detect case data changes
+            setupCaseChangeObserver();
         } else if (window.location.pathname.match(/\/ui\/CaseEntry/i)) {
             // We're on CaseEntry, set up an observer to detect URL changes
             console.log("On CaseEntry page, waiting for redirection to CaseRecord...");
@@ -1113,26 +1136,103 @@
                     const button = addPrintButton();
                     prefetchData();
                     document.addEventListener('keydown', handleKeyboardShortcut);
+
+                    // Add mutation observer to detect case data changes
+                    setupCaseChangeObserver();
                 }
             }, 500);
         }
     };
 
+    // Add a global variable to track our observer
+    let caseChangeObserver = null;
+
+    const setupCaseChangeObserver = () => {
+        console.log("Setting up case change observer");
+
+        // First, disconnect any existing observer to prevent duplicates
+        if (caseChangeObserver) {
+            console.log("Disconnecting existing observer");
+            caseChangeObserver.disconnect();
+            caseChangeObserver = null;
+        }
+
+        // Function to check for caseMain section
+        const checkForCaseMain = () => {
+            const caseMainSection = document.getElementById('caseMain');
+            return !!caseMainSection;
+        };
+
+        // Initial state - check if caseMain is already present
+        let caseMainWasPresent = checkForCaseMain();
+        console.log("Initial caseMain presence:", caseMainWasPresent);
+
+        // Create a mutation observer to watch for DOM changes
+        caseChangeObserver = new MutationObserver((mutations) => {
+            // Check current state
+            const caseMainIsPresent = checkForCaseMain();
+
+            // If state changed from present to not present, clear the cache
+            if (caseMainWasPresent && !caseMainIsPresent) {
+                console.log("Case main section disappeared, clearing cache");
+                // Reset cached data
+                cachedData = null;
+                cachedPDFs = {
+                    workTicket: null,
+                    label: null,
+                    isGenerating: false
+                };
+            }
+            // If state changed from not present to present, fetch new data
+            else if (!caseMainWasPresent && caseMainIsPresent) {
+                console.log("Case main section appeared, fetching data");
+                // Fetch new data (cache should already be cleared)
+                prefetchData();
+            }
+
+            // Update state for next check
+            caseMainWasPresent = caseMainIsPresent;
+        });
+
+        // Start observing the document body for changes
+        caseChangeObserver.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+    };
+
+    // Also update the cleanup when the script is unloaded or the page changes
+    const cleanupScript = () => {
+        // Disconnect observer if it exists
+        if (caseChangeObserver) {
+            caseChangeObserver.disconnect();
+            caseChangeObserver = null;
+        }
+
+        // Restore original history methods if they were modified
+        if (originalPushState && originalReplaceState) {
+            history.pushState = originalPushState;
+            history.replaceState = originalReplaceState;
+        }
+
+        // Remove event listeners
+        window.removeEventListener('popstate', handleUrlChange);
+        document.removeEventListener('keydown', handleKeyboardShortcut);
+    };
+
+    // Update handleUrlChange to clean up before reinitializing
     const handleUrlChange = () => {
         if (window.location.pathname.match(/\/ui\/CaseRecord\//i)) {
             console.log("URL changed to CaseRecord, initializing script...");
+
+            // Clean up existing observers and listeners
+            cleanupScript();
+
+            // Initialize for the new page
             const button = addPrintButton();
             prefetchData();
             document.addEventListener('keydown', handleKeyboardShortcut);
-
-            // Remove event listeners to avoid multiple initializations
-            window.removeEventListener('popstate', handleUrlChange);
-
-            // Restore original history methods if they were modified
-            if (originalPushState && originalReplaceState) {
-                history.pushState = originalPushState;
-                history.replaceState = originalReplaceState;
-            }
+            setupCaseChangeObserver();
         }
     };
 
