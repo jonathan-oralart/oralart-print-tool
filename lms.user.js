@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         LMS
 // @namespace    http://tampermonkey.net/
-// @version      1.18
-// @description  Extracts and prints lab sheet information from 3Shape
+// @version      1.19
+// @description  Extracts and prints lab sheet information from 3Shape LMS
 // @author       You
 // @match        https://lms.3shape.com/ui/CaseRecord/*
 // @match        https://lms.3shape.com/ui/caseRecord/*
@@ -25,7 +25,7 @@
 (function () {
     'use strict';
 
-    console.log(`Version 1.18`);
+    console.log(`Version 1.19`);
     // Add print button to the page
     function addPrintButton() {
         const button = document.createElement('button');
@@ -393,7 +393,7 @@
             const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
             return {
                 day: String(day).padStart(2, '0'),
-                rest: `${months[date.getMonth()]} ${date.getFullYear()} (${days[date.getDay()]})`
+                rest: `${months[date.getMonth()]} (${days[date.getDay()]})`
             };
         };
 
@@ -417,9 +417,8 @@
     <style>
         body { 
             font-family: Arial, sans-serif;
-            max-width: 800px;
+            max-width: 400px;
             margin: 0 auto;
-            line-height: 1.4;
         }
         .header-container {
             display: grid;
@@ -438,12 +437,12 @@
             text-align: right;
         }
         .company-name {
-            font-size: 16px;
+            font-size: 14px;
             font-weight: bold;
             margin-bottom: 0;
         }
         .courier-text, .pan-label {
-            font-size: 18px;
+            font-size: 14px;
             font-weight: bold;
             margin-bottom: 5px;
             white-space: nowrap;
@@ -463,7 +462,7 @@
         .due-date-box {
             background: #000;
             color: #fff;
-            padding: 15px;
+            padding: 8px;
             text-align: center;
             width: 115px;
             z-index: 1;
@@ -481,7 +480,6 @@
         .info-label {
             font-size: 12px;
             color: #666;
-            margin-bottom: 2px;
         }
         .info-value {
             font-size: 32px;
@@ -593,32 +591,28 @@
         </div>
     </div>
 
-    <div style="display: flex">
-        <div class="left-info-container" style="flex: 1; margin-right: 5px;">
-            <div class="info-section">
-                <div class="info-label">Doctor</div>
-                <div class="info-value">${data.doctorName}</div>
-            </div>
-
-            <div class="info-section">
-                <div class="info-label">Patient</div>
-                <div class="info-value">${data.patientName}</div>
-            </div>
-
-            <div class="info-section">
-                <div class="phone-label">Phone</div>
-                <div class="phone-value">${data.phone}</div>
+    <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+        <div class="info-section" style="flex: 1; margin-right: 10px;">
+            <div class="info-label">Doctor</div>
+            <div class="info-value">${data.doctorName}</div>
+        </div>
+        
+        <div class="right-info-container">
+            <div class="due-date-box">
+                <div class="due-date-day">${dueDateTime.day}</div>
+                <div class="due-date-rest">${dueDateTime.rest}</div>
             </div>
         </div>
+    </div>
 
-        <div class="right-info-container" style="display: flex; flex-direction: column; ">
-            <div>
-                <div class="due-date-box">
-                    <div class="due-date-day">${dueDateTime.day}</div>
-                    <div class="due-date-rest">${dueDateTime.rest}</div>
-                </div>
-            </div>
-        </div>
+    <div class="info-section" style="margin-bottom: 10px;">
+        <div class="info-label">Patient</div>
+        <div class="info-value">${data.patientName}</div>
+    </div>
+
+    <div class="info-section" style="margin-bottom: 10px;">
+        <div class="phone-label">Phone</div>
+        <div class="phone-value">${data.phone}</div>
     </div>
 
     <div>Total Units: ${data.caseItems.length}</div>
