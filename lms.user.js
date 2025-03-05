@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LMS
 // @namespace    http://tampermonkey.net/
-// @version      1.19
+// @version      1.20
 // @description  Extracts and prints lab sheet information from 3Shape LMS
 // @author       You
 // @match        https://lms.3shape.com/ui/CaseRecord/*
@@ -25,7 +25,7 @@
 (function () {
     'use strict';
 
-    console.log(`Version 1.19`);
+    console.log(`Version 1.20`);
     // Add print button to the page
     function addPrintButton() {
         const button = document.createElement('button');
@@ -344,6 +344,16 @@
                 pref.value.split('\n')
             ).flat();
 
+            // Add remake/adjustment indicator
+            let remakeStatus = '';
+            if (caseData.remakeCategory === 1) {
+                remakeStatus = '[R]';
+            } else if (caseData.remakeCategory === 2) {
+                remakeStatus = '[A]';
+            }
+
+
+
             return {
                 patientName: `${caseData.patientLastName}, ${caseData.patientFirstName}`.trim(),
                 panNum: caseData.panNum,
@@ -357,7 +367,8 @@
                 dueDate: formatAPIDate(caseData.dueDate),
                 shipDate: formatAPIDate(caseData.shipDate),
                 doctorPreferences,
-                courierInfo
+                courierInfo,
+                remakeStatus
             };
         } catch (e) {
             console.error('Error in getData:', e);
@@ -485,6 +496,13 @@
             font-size: 32px;
             font-weight: bold;
             margin-bottom: 10px;
+            display: flex;
+        }
+        .patient-name {
+            flex-grow: 1;
+        }
+        .remake-status {
+            color: red;
         }
         .details-table {
             width: 100%;
@@ -607,7 +625,10 @@
 
     <div class="info-section" style="margin-bottom: 10px;">
         <div class="info-label">Patient</div>
-        <div class="info-value">${data.patientName}</div>
+        <div class="info-value">
+            <div class="patient-name">${data.patientName}</div>
+            ${data.remakeStatus ? `<div class="remake-status">${data.remakeStatus}</div>` : ''}
+        </div>
     </div>
 
     <div class="info-section" style="margin-bottom: 10px;">
@@ -984,9 +1005,9 @@
                     height: dimensions.height,
                     margin: {
                         top: '2mm',
-                        right: '2mm',
+                        right: '4mm',
                         bottom: '2mm',
-                        left: '2mm'
+                        left: '4mm'
                     },
                     printBackground: true
                 },
