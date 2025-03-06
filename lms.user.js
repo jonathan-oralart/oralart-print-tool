@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LMS
 // @namespace    http://tampermonkey.net/
-// @version      1.20
+// @version      1.21
 // @description  Extracts and prints lab sheet information from 3Shape LMS
 // @author       You
 // @match        https://lms.3shape.com/ui/CaseRecord/*
@@ -25,7 +25,6 @@
 (function () {
     'use strict';
 
-    console.log(`Version 1.20`);
     // Add print button to the page
     function addPrintButton() {
         const button = document.createElement('button');
@@ -448,15 +447,14 @@
             text-align: right;
         }
         .company-name {
-            font-size: 14px;
+            font-size: 11px;
             font-weight: bold;
             margin-bottom: 0;
         }
         .courier-text, .pan-label {
-            font-size: 14px;
+            font-size: 11px;
             font-weight: bold;
             margin-bottom: 5px;
-            white-space: nowrap;
         }
         .barcode-number {
             font-weight: bold;
