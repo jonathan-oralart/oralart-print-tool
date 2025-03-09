@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LMS
 // @namespace    http://tampermonkey.net/
-// @version      1.21
+// @version      1.22
 // @description  Extracts and prints lab sheet information from 3Shape LMS
 // @author       You
 // @match        https://lms.3shape.com/ui/CaseRecord/*
@@ -25,7 +25,91 @@
 (function () {
     'use strict';
 
-    // Add print button to the page
+    // Move updateButtonState outside of addPrintButton
+    const updateButtonState = () => {
+        const button = document.getElementById('lab-sheet-button');
+        const viewLabelsButton = document.getElementById('view-labels-button');
+        const viewWorkTicketButton = document.getElementById('view-work-ticket-button');
+
+        if (!button || !viewLabelsButton || !viewWorkTicketButton) return;
+
+        if (cachedPDFs.isGenerating) {
+            button.textContent = 'Waiting...';
+            button.style.background = '#cccccc';
+            button.style.cursor = 'not-allowed';
+            button.onclick = null;
+
+            viewLabelsButton.style.background = '#cccccc';
+            viewLabelsButton.style.cursor = 'not-allowed';
+            viewLabelsButton.onclick = null;
+
+            viewWorkTicketButton.style.background = '#cccccc';
+            viewWorkTicketButton.style.cursor = 'not-allowed';
+            viewWorkTicketButton.onclick = null;
+        } else if (cachedData && !cachedPDFs.workTicket && !cachedPDFs.label) {
+            button.textContent = 'Generate PDF';
+            button.style.background = '#4a4a4a';
+            button.style.cursor = 'pointer';
+            button.onclick = generatePDFs;
+
+            viewLabelsButton.textContent = 'View Label';
+            viewLabelsButton.style.background = '#4a4a4a';
+            viewLabelsButton.style.cursor = 'pointer';
+            viewLabelsButton.onclick = viewLabels;
+
+            viewWorkTicketButton.textContent = 'View Work Ticket';
+            viewWorkTicketButton.style.background = '#4a4a4a';
+            viewWorkTicketButton.style.cursor = 'pointer';
+            viewWorkTicketButton.onclick = viewWorkTicket;
+        } else if (cachedData && (cachedPDFs.workTicket || cachedPDFs.label)) {
+            button.textContent = 'Download';
+            button.style.background = '#4a4a4a';
+            button.style.cursor = 'pointer';
+            button.onclick = downloadPDFs;
+
+            viewLabelsButton.textContent = 'View Label';
+            viewLabelsButton.style.background = '#4a4a4a';
+            viewLabelsButton.style.cursor = 'pointer';
+            viewLabelsButton.onclick = viewLabels;
+
+            viewWorkTicketButton.textContent = 'View Work Ticket';
+            viewWorkTicketButton.style.background = '#4a4a4a';
+            viewWorkTicketButton.style.cursor = 'pointer';
+            viewWorkTicketButton.onclick = viewWorkTicket;
+        } else if (isFetchingData) {
+            button.textContent = 'Fetching...';
+            button.style.background = '#cccccc';
+            button.style.cursor = 'not-allowed';
+            button.onclick = null;
+
+            viewLabelsButton.textContent = 'Fetching...';
+            viewLabelsButton.style.background = '#cccccc';
+            viewLabelsButton.style.cursor = 'not-allowed';
+            viewLabelsButton.onclick = null;
+
+            viewWorkTicketButton.textContent = 'Fetching...';
+            viewWorkTicketButton.style.background = '#cccccc';
+            viewWorkTicketButton.style.cursor = 'not-allowed';
+            viewWorkTicketButton.onclick = null;
+        } else {
+            button.textContent = 'Retry Data';
+            button.style.background = '#4a4a4a';
+            button.style.cursor = 'pointer';
+            button.onclick = prefetchData;
+
+            viewLabelsButton.textContent = 'Retry Data';
+            viewLabelsButton.style.background = '#4a4a4a';
+            viewLabelsButton.style.cursor = 'pointer';
+            viewLabelsButton.onclick = prefetchData;
+
+            viewWorkTicketButton.textContent = 'Retry Data';
+            viewWorkTicketButton.style.background = '#4a4a4a';
+            viewWorkTicketButton.style.cursor = 'pointer';
+            viewWorkTicketButton.onclick = prefetchData;
+        }
+    };
+
+    // Modify addPrintButton to use the global updateButtonState
     function addPrintButton() {
         const button = document.createElement('button');
         button.id = 'lab-sheet-button';
@@ -112,67 +196,6 @@
 
         checkboxContainer.appendChild(checkbox);
         checkboxContainer.appendChild(label);
-
-        // Only add click listener when data is ready
-        const updateButtonState = () => {
-            if (cachedPDFs.isGenerating) {
-                button.textContent = 'Waiting...';
-                button.style.background = '#cccccc';
-                button.style.cursor = 'not-allowed';
-                button.onclick = null;
-
-                viewLabelsButton.style.background = '#cccccc';
-                viewLabelsButton.style.cursor = 'not-allowed';
-                viewLabelsButton.onclick = null;
-
-                viewWorkTicketButton.style.background = '#cccccc';
-                viewWorkTicketButton.style.cursor = 'not-allowed';
-                viewWorkTicketButton.onclick = null;
-            } else if (cachedData && !cachedPDFs.workTicket && !cachedPDFs.label) {
-                button.textContent = 'Generate PDF';
-                button.style.background = '#4a4a4a';
-                button.style.cursor = 'pointer';
-                button.onclick = generatePDFs;
-
-                viewLabelsButton.textContent = 'View Label';
-                viewLabelsButton.style.background = '#4a4a4a';
-                viewLabelsButton.style.cursor = 'pointer';
-                viewLabelsButton.onclick = viewLabels;
-
-                viewWorkTicketButton.textContent = 'View Work Ticket';
-                viewWorkTicketButton.style.background = '#4a4a4a';
-                viewWorkTicketButton.style.cursor = 'pointer';
-                viewWorkTicketButton.onclick = viewWorkTicket;
-            } else if (cachedData && (cachedPDFs.workTicket || cachedPDFs.label)) {
-                button.textContent = 'Download';
-                button.style.background = '#4a4a4a';
-                button.style.cursor = 'pointer';
-                button.onclick = downloadPDFs;
-
-                viewLabelsButton.textContent = 'View Label';
-                viewLabelsButton.style.background = '#4a4a4a';
-                viewLabelsButton.style.cursor = 'pointer';
-                viewLabelsButton.onclick = viewLabels;
-
-                viewWorkTicketButton.textContent = 'View Work Ticket';
-                viewWorkTicketButton.style.background = '#4a4a4a';
-                viewWorkTicketButton.style.cursor = 'pointer';
-                viewWorkTicketButton.onclick = viewWorkTicket;
-            } else {
-                button.textContent = 'Fetching...';
-                button.style.background = '#cccccc';
-                button.style.cursor = 'not-allowed';
-                button.onclick = null;
-
-                viewLabelsButton.style.background = '#cccccc';
-                viewLabelsButton.style.cursor = 'not-allowed';
-                viewLabelsButton.onclick = null;
-
-                viewWorkTicketButton.style.background = '#cccccc';
-                viewWorkTicketButton.style.cursor = 'not-allowed';
-                viewWorkTicketButton.onclick = null;
-            }
-        };
 
         // Add observer to watch for changes in cached data
         const checkDataInterval = setInterval(() => {
@@ -291,17 +314,12 @@
     };
 
     const fetchProductLookup = async () => {
-        try {
-            const response = await fetch("https://api.sheety.co/6565224fa65a11082d88012dd5762961/maskingTapeItemRules/sheet1");
-            const data = await response.json();
-            return data.sheet1.reduce((acc, item) => {
-                acc[item.product] = item.use;
-                return acc;
-            }, {});
-        } catch (error) {
-            console.error('Error fetching product lookup:', error);
-            return {};
-        }
+        const response = await fetch("https://api.sheety.co/6565224fa65a11082d88012dd5762961/maskingTapeItemRules/sheet1/");
+        const data = await response.json();
+        return data.sheet1.reduce((acc, item) => {
+            acc[item.product] = item.use;
+            return acc;
+        }, {});
     };
 
     // Modify the getData function
@@ -351,8 +369,6 @@
                 remakeStatus = '[A]';
             }
 
-
-
             return {
                 patientName: `${caseData.patientLastName}, ${caseData.patientFirstName}`.trim(),
                 panNum: caseData.panNum,
@@ -371,6 +387,7 @@
             };
         } catch (e) {
             console.error('Error in getData:', e);
+
             throw e;
         }
     };
@@ -949,7 +966,6 @@
 
     // Modify the prefetchData function to use the flag
     const prefetchData = async () => {
-        // If already fetching, don't start another fetch
         if (isFetchingData) {
             console.log("Already fetching data, skipping duplicate request");
             return;
@@ -957,7 +973,9 @@
 
         try {
             isFetchingData = true;
-            // Fetch data first
+            updateButtonState(); // This will show "Fetching..." state
+
+            // Fetch data
             cachedData = await getData();
             console.log("Data prefetched successfully", cachedData);
 
@@ -967,12 +985,19 @@
                 generatePDFs();
             }
 
-            // Update button state (will be handled by the interval in addPrintButton)
         } catch (e) {
             console.error('Error prefetching data:', e);
             showError('Failed to load data: ' + e.message);
+            // Clear cached data on error
+            cachedData = null;
+            cachedPDFs = {
+                workTicket: null,
+                label: null,
+                isGenerating: false
+            };
         } finally {
             isFetchingData = false;
+            updateButtonState(); // This will show either success state or "Retry Data"
         }
     };
 
