@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LMS
 // @namespace    http://tampermonkey.net/
-// @version      1.22
+// @version      1.23
 // @description  Extracts and prints lab sheet information from 3Shape LMS
 // @author       You
 // @match        https://lms.3shape.com/ui/CaseRecord/*
@@ -1201,14 +1201,40 @@
             return !!caseMainSection;
         };
 
+        // Function to check for billing iframe
+        const checkForBillingIframe = () => {
+            const iframe = document.querySelector('.popup-modal-content iframe[src*="/pages/admin/"]');
+            return !!iframe;
+        };
+
+        // Function to update button visibility
+        const updateButtonVisibility = (shouldHide) => {
+            const buttons = [
+                document.getElementById('lab-sheet-button'),
+                document.getElementById('view-labels-button'),
+                document.getElementById('view-work-ticket-button'),
+                document.getElementById('auto-download-checkbox')?.parentElement
+            ];
+
+            buttons.forEach(button => {
+                if (button) {
+                    button.style.display = shouldHide ? 'none' : '';
+                }
+            });
+        };
+
         // Initial state - check if caseMain is already present
         let caseMainWasPresent = checkForCaseMain();
         console.log("Initial caseMain presence:", caseMainWasPresent);
 
         // Create a mutation observer to watch for DOM changes
         caseChangeObserver = new MutationObserver((mutations) => {
-            // Check current state
+            // Check current states
             const caseMainIsPresent = checkForCaseMain();
+            const billingIframePresent = checkForBillingIframe();
+
+            // Update button visibility based on billing iframe presence
+            updateButtonVisibility(billingIframePresent);
 
             // If state changed from present to not present, clear the cache
             if (caseMainWasPresent && !caseMainIsPresent) {
@@ -1237,6 +1263,9 @@
             childList: true,
             subtree: true
         });
+
+        // Initial check for billing iframe
+        updateButtonVisibility(checkForBillingIframe());
     };
 
     // Also update the cleanup when the script is unloaded or the page changes
