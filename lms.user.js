@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LMS
 // @namespace    http://tampermonkey.net/
-// @version      1.23
+// @version      1.24
 // @description  Extracts and prints lab sheet information from 3Shape LMS
 // @author       You
 // @match        https://lms.3shape.com/ui/CaseRecord/*
@@ -28,10 +28,20 @@
     // Move updateButtonState outside of addPrintButton
     const updateButtonState = () => {
         const button = document.getElementById('lab-sheet-button');
+        const username = GM_getValue('username2', '');
+        const isJonathan = username.toLowerCase() === 'jonathan';
+
+        // Get the appropriate buttons based on user
         const viewLabelsButton = document.getElementById('view-labels-button');
         const viewWorkTicketButton = document.getElementById('view-work-ticket-button');
+        const generateLabelButton = document.getElementById('generate-label-button');
+        const generateWorkTicketButton = document.getElementById('generate-work-ticket-button');
 
-        if (!button || !viewLabelsButton || !viewWorkTicketButton) return;
+        if (!button) return;
+
+        // Determine which buttons exist based on user type
+        const hasViewButtons = isJonathan && viewLabelsButton && viewWorkTicketButton;
+        const hasGenerateButtons = !isJonathan && generateLabelButton && generateWorkTicketButton;
 
         if (cachedPDFs.isGenerating) {
             button.textContent = 'Waiting...';
@@ -39,78 +49,168 @@
             button.style.cursor = 'not-allowed';
             button.onclick = null;
 
-            viewLabelsButton.style.background = '#cccccc';
-            viewLabelsButton.style.cursor = 'not-allowed';
-            viewLabelsButton.onclick = null;
+            if (hasViewButtons) {
+                viewLabelsButton.style.background = '#cccccc';
+                viewLabelsButton.style.cursor = 'not-allowed';
+                viewLabelsButton.onclick = null;
 
-            viewWorkTicketButton.style.background = '#cccccc';
-            viewWorkTicketButton.style.cursor = 'not-allowed';
-            viewWorkTicketButton.onclick = null;
+                viewWorkTicketButton.style.background = '#cccccc';
+                viewWorkTicketButton.style.cursor = 'not-allowed';
+                viewWorkTicketButton.onclick = null;
+            }
+
+            if (hasGenerateButtons) {
+                generateLabelButton.textContent = 'Waiting...';
+                generateLabelButton.style.background = '#cccccc';
+                generateLabelButton.style.cursor = 'not-allowed';
+                generateLabelButton.onclick = null;
+
+                generateWorkTicketButton.textContent = 'Waiting...';
+                generateWorkTicketButton.style.background = '#cccccc';
+                generateWorkTicketButton.style.cursor = 'not-allowed';
+                generateWorkTicketButton.onclick = null;
+            }
         } else if (cachedData && !cachedPDFs.workTicket && !cachedPDFs.label) {
             button.textContent = 'Generate PDF';
             button.style.background = '#4a4a4a';
             button.style.cursor = 'pointer';
             button.onclick = generatePDFs;
 
-            viewLabelsButton.textContent = 'View Label';
-            viewLabelsButton.style.background = '#4a4a4a';
-            viewLabelsButton.style.cursor = 'pointer';
-            viewLabelsButton.onclick = viewLabels;
+            if (hasViewButtons) {
+                viewLabelsButton.textContent = 'View Label';
+                viewLabelsButton.style.background = '#4a4a4a';
+                viewLabelsButton.style.cursor = 'pointer';
+                viewLabelsButton.onclick = viewLabels;
 
-            viewWorkTicketButton.textContent = 'View Work Ticket';
-            viewWorkTicketButton.style.background = '#4a4a4a';
-            viewWorkTicketButton.style.cursor = 'pointer';
-            viewWorkTicketButton.onclick = viewWorkTicket;
+                viewWorkTicketButton.textContent = 'View Work Ticket';
+                viewWorkTicketButton.style.background = '#4a4a4a';
+                viewWorkTicketButton.style.cursor = 'pointer';
+                viewWorkTicketButton.onclick = viewWorkTicket;
+            }
+
+            if (hasGenerateButtons) {
+                generateLabelButton.textContent = 'Generate Label';
+                generateLabelButton.style.background = '#4a4a4a';
+                generateLabelButton.style.cursor = 'pointer';
+                generateLabelButton.onclick = generateAndDownloadLabel;
+
+                generateWorkTicketButton.textContent = 'Generate Work Ticket';
+                generateWorkTicketButton.style.background = '#4a4a4a';
+                generateWorkTicketButton.style.cursor = 'pointer';
+                generateWorkTicketButton.onclick = generateAndDownloadWorkTicket;
+            }
         } else if (cachedData && (cachedPDFs.workTicket || cachedPDFs.label)) {
             button.textContent = 'Download';
             button.style.background = '#4a4a4a';
             button.style.cursor = 'pointer';
             button.onclick = downloadPDFs;
 
-            viewLabelsButton.textContent = 'View Label';
-            viewLabelsButton.style.background = '#4a4a4a';
-            viewLabelsButton.style.cursor = 'pointer';
-            viewLabelsButton.onclick = viewLabels;
+            if (hasViewButtons) {
+                viewLabelsButton.textContent = 'View Label';
+                viewLabelsButton.style.background = '#4a4a4a';
+                viewLabelsButton.style.cursor = 'pointer';
+                viewLabelsButton.onclick = viewLabels;
 
-            viewWorkTicketButton.textContent = 'View Work Ticket';
-            viewWorkTicketButton.style.background = '#4a4a4a';
-            viewWorkTicketButton.style.cursor = 'pointer';
-            viewWorkTicketButton.onclick = viewWorkTicket;
+                viewWorkTicketButton.textContent = 'View Work Ticket';
+                viewWorkTicketButton.style.background = '#4a4a4a';
+                viewWorkTicketButton.style.cursor = 'pointer';
+                viewWorkTicketButton.onclick = viewWorkTicket;
+            }
+
+            if (hasGenerateButtons) {
+                // If label is already generated, show download button
+                if (cachedPDFs.label) {
+                    generateLabelButton.textContent = 'Download Label';
+                    generateLabelButton.style.background = '#4a4a4a';
+                    generateLabelButton.style.cursor = 'pointer';
+                    generateLabelButton.onclick = downloadLabelOnly;
+                } else {
+                    generateLabelButton.textContent = 'Generate Label';
+                    generateLabelButton.style.background = '#4a4a4a';
+                    generateLabelButton.style.cursor = 'pointer';
+                    generateLabelButton.onclick = generateAndDownloadLabel;
+                }
+
+                // If work ticket is already generated, show download button
+                if (cachedPDFs.workTicket) {
+                    generateWorkTicketButton.textContent = 'Download Work Ticket';
+                    generateWorkTicketButton.style.background = '#4a4a4a';
+                    generateWorkTicketButton.style.cursor = 'pointer';
+                    generateWorkTicketButton.onclick = downloadWorkTicketOnly;
+                } else {
+                    generateWorkTicketButton.textContent = 'Generate Work Ticket';
+                    generateWorkTicketButton.style.background = '#4a4a4a';
+                    generateWorkTicketButton.style.cursor = 'pointer';
+                    generateWorkTicketButton.onclick = generateAndDownloadWorkTicket;
+                }
+            }
         } else if (isFetchingData) {
             button.textContent = 'Fetching...';
             button.style.background = '#cccccc';
             button.style.cursor = 'not-allowed';
             button.onclick = null;
 
-            viewLabelsButton.textContent = 'Fetching...';
-            viewLabelsButton.style.background = '#cccccc';
-            viewLabelsButton.style.cursor = 'not-allowed';
-            viewLabelsButton.onclick = null;
+            if (hasViewButtons) {
+                viewLabelsButton.textContent = 'Fetching...';
+                viewLabelsButton.style.background = '#cccccc';
+                viewLabelsButton.style.cursor = 'not-allowed';
+                viewLabelsButton.onclick = null;
 
-            viewWorkTicketButton.textContent = 'Fetching...';
-            viewWorkTicketButton.style.background = '#cccccc';
-            viewWorkTicketButton.style.cursor = 'not-allowed';
-            viewWorkTicketButton.onclick = null;
+                viewWorkTicketButton.textContent = 'Fetching...';
+                viewWorkTicketButton.style.background = '#cccccc';
+                viewWorkTicketButton.style.cursor = 'not-allowed';
+                viewWorkTicketButton.onclick = null;
+            }
+
+            if (hasGenerateButtons) {
+                generateLabelButton.textContent = 'Fetching...';
+                generateLabelButton.style.background = '#cccccc';
+                generateLabelButton.style.cursor = 'not-allowed';
+                generateLabelButton.onclick = null;
+
+                generateWorkTicketButton.textContent = 'Fetching...';
+                generateWorkTicketButton.style.background = '#cccccc';
+                generateWorkTicketButton.style.cursor = 'not-allowed';
+                generateWorkTicketButton.onclick = null;
+            }
         } else {
             button.textContent = 'Retry Data';
             button.style.background = '#4a4a4a';
             button.style.cursor = 'pointer';
             button.onclick = prefetchData;
 
-            viewLabelsButton.textContent = 'Retry Data';
-            viewLabelsButton.style.background = '#4a4a4a';
-            viewLabelsButton.style.cursor = 'pointer';
-            viewLabelsButton.onclick = prefetchData;
+            if (hasViewButtons) {
+                viewLabelsButton.textContent = 'Retry Data';
+                viewLabelsButton.style.background = '#4a4a4a';
+                viewLabelsButton.style.cursor = 'pointer';
+                viewLabelsButton.onclick = prefetchData;
 
-            viewWorkTicketButton.textContent = 'Retry Data';
-            viewWorkTicketButton.style.background = '#4a4a4a';
-            viewWorkTicketButton.style.cursor = 'pointer';
-            viewWorkTicketButton.onclick = prefetchData;
+                viewWorkTicketButton.textContent = 'Retry Data';
+                viewWorkTicketButton.style.background = '#4a4a4a';
+                viewWorkTicketButton.style.cursor = 'pointer';
+                viewWorkTicketButton.onclick = prefetchData;
+            }
+
+            if (hasGenerateButtons) {
+                generateLabelButton.textContent = 'Retry Data';
+                generateLabelButton.style.background = '#4a4a4a';
+                generateLabelButton.style.cursor = 'pointer';
+                generateLabelButton.onclick = prefetchData;
+
+                generateWorkTicketButton.textContent = 'Retry Data';
+                generateWorkTicketButton.style.background = '#4a4a4a';
+                generateWorkTicketButton.style.cursor = 'pointer';
+                generateWorkTicketButton.onclick = prefetchData;
+            }
         }
     };
 
-    // Modify addPrintButton to use the global updateButtonState
+    // Modify addPrintButton to conditionally create buttons
     function addPrintButton() {
+        // Get the username and check if it's Jonathan
+        const username = GM_getValue('username2', '');
+        const isJonathan = username.toLowerCase() === 'jonathan';
+
         const button = document.createElement('button');
         button.id = 'lab-sheet-button';
         button.textContent = 'Fetching...';
@@ -119,44 +219,6 @@
             width: 140px;
             top: 41px;
             right: 32px;
-            z-index: 10000;
-            padding: 8px 16px;
-            background: #cccccc;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: not-allowed;
-            transition: all 0.3s ease;
-        `;
-
-        // Create view labels button
-        const viewLabelsButton = document.createElement('button');
-        viewLabelsButton.id = 'view-labels-button';
-        viewLabelsButton.textContent = 'View Label';
-        viewLabelsButton.style.cssText = `
-            position: fixed;
-            width: 140px;
-            top: 41px;
-            right: 182px;
-            z-index: 10000;
-            padding: 8px 16px;
-            background: #cccccc;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: not-allowed;
-            transition: all 0.3s ease;
-        `;
-
-        // Create view work ticket button
-        const viewWorkTicketButton = document.createElement('button');
-        viewWorkTicketButton.id = 'view-work-ticket-button';
-        viewWorkTicketButton.textContent = 'View Work Ticket';
-        viewWorkTicketButton.style.cssText = `
-            position: fixed;
-            width: 140px;
-            top: 41px;
-            right: 332px;
             z-index: 10000;
             padding: 8px 16px;
             background: #cccccc;
@@ -206,9 +268,92 @@
         }, 100);
 
         document.body.appendChild(button);
-        document.body.appendChild(viewLabelsButton);
-        document.body.appendChild(viewWorkTicketButton);
         document.body.appendChild(checkboxContainer);
+
+        if (isJonathan) {
+            // Create view labels button
+            const viewLabelsButton = document.createElement('button');
+            viewLabelsButton.id = 'view-labels-button';
+            viewLabelsButton.textContent = 'View Label';
+            viewLabelsButton.style.cssText = `
+                position: fixed;
+                width: 140px;
+                top: 41px;
+                right: 182px;
+                z-index: 10000;
+                padding: 8px 16px;
+                background: #cccccc;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                cursor: not-allowed;
+                transition: all 0.3s ease;
+            `;
+
+            // Create view work ticket button
+            const viewWorkTicketButton = document.createElement('button');
+            viewWorkTicketButton.id = 'view-work-ticket-button';
+            viewWorkTicketButton.textContent = 'View Work Ticket';
+            viewWorkTicketButton.style.cssText = `
+                position: fixed;
+                width: 140px;
+                top: 41px;
+                right: 332px;
+                z-index: 10000;
+                padding: 8px 16px;
+                background: #cccccc;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                cursor: not-allowed;
+                transition: all 0.3s ease;
+            `;
+
+            document.body.appendChild(viewLabelsButton);
+            document.body.appendChild(viewWorkTicketButton);
+        } else {
+            // Create generate label button for non-Jonathan users
+            const generateLabelButton = document.createElement('button');
+            generateLabelButton.id = 'generate-label-button';
+            generateLabelButton.textContent = 'Generate Label';
+            generateLabelButton.style.cssText = `
+                position: fixed;
+                width: 140px;
+                top: 41px;
+                right: 182px;
+                z-index: 10000;
+                padding: 8px 16px;
+                background: #cccccc;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                cursor: not-allowed;
+                transition: all 0.3s ease;
+            `;
+
+            // Create generate work ticket button for non-Jonathan users
+            const generateWorkTicketButton = document.createElement('button');
+            generateWorkTicketButton.id = 'generate-work-ticket-button';
+            generateWorkTicketButton.textContent = 'Generate Work Ticket';
+            generateWorkTicketButton.style.cssText = `
+                position: fixed;
+                width: 170px;
+                top: 41px;
+                right: 332px;
+                z-index: 10000;
+                padding: 8px 16px;
+                background: #cccccc;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                cursor: not-allowed;
+                transition: all 0.3s ease;
+            `;
+
+            document.body.appendChild(generateLabelButton);
+            document.body.appendChild(generateWorkTicketButton);
+        }
+
         return button;
     }
 
@@ -1127,8 +1272,23 @@
     let originalPushState;
     let originalReplaceState;
 
-    // Check if we're on a CaseRecord page or need to wait for redirection
+    // Add this function to check for username
+    const checkUsername = () => {
+        let username = GM_getValue('username', '');
+        if (!username) {
+            username = prompt('Please enter your username:');
+            if (username) {
+                GM_setValue('username', username);
+            }
+        }
+        return username;
+    };
+
+    // Modify the initializeScript function to check username
     const initializeScript = () => {
+        // Check username first
+        checkUsername();
+
         if (window.location.pathname.match(/\/ui\/CaseRecord\//i)) {
             // We're already on a CaseRecord page, initialize normally
             const button = addPrintButton();
@@ -1209,12 +1369,26 @@
 
         // Function to update button visibility
         const updateButtonVisibility = (shouldHide) => {
+            const username = GM_getValue('username', '');
+            const isJonathan = username.toLowerCase() === 'jonathan';
+
             const buttons = [
                 document.getElementById('lab-sheet-button'),
-                document.getElementById('view-labels-button'),
-                document.getElementById('view-work-ticket-button'),
                 document.getElementById('auto-download-checkbox')?.parentElement
             ];
+
+            // Add the appropriate buttons based on user type
+            if (isJonathan) {
+                const viewLabelsButton = document.getElementById('view-labels-button');
+                const viewWorkTicketButton = document.getElementById('view-work-ticket-button');
+                if (viewLabelsButton) buttons.push(viewLabelsButton);
+                if (viewWorkTicketButton) buttons.push(viewWorkTicketButton);
+            } else {
+                const generateLabelButton = document.getElementById('generate-label-button');
+                const generateWorkTicketButton = document.getElementById('generate-work-ticket-button');
+                if (generateLabelButton) buttons.push(generateLabelButton);
+                if (generateWorkTicketButton) buttons.push(generateWorkTicketButton);
+            }
 
             buttons.forEach(button => {
                 if (button) {
@@ -1300,6 +1474,112 @@
             prefetchData();
             document.addEventListener('keydown', handleKeyboardShortcut);
             setupCaseChangeObserver();
+        }
+    };
+
+    // Add new functions for individual PDF downloads
+    const downloadLabelOnly = async () => {
+        try {
+            if (!cachedData || !cachedPDFs.label) {
+                throw new Error('Label PDF not yet loaded');
+            }
+
+            const sanitizedPatientName = cachedData.patientName.replace(/[^\w\s]/g, '');
+            const labelFilename = `${sanitizedPatientName} LMS (label).pdf`;
+            downloadPDF(cachedPDFs.label, labelFilename);
+        } catch (e) {
+            console.error('Error downloading label:', e);
+            showError('Failed to download label: ' + e.message);
+        }
+    };
+
+    const downloadWorkTicketOnly = async () => {
+        try {
+            if (!cachedData || !cachedPDFs.workTicket) {
+                throw new Error('Work ticket PDF not yet loaded');
+            }
+
+            const sanitizedPatientName = cachedData.patientName.replace(/[^\w\s]/g, '');
+            const workTicketFilename = `${sanitizedPatientName} LMS (work ticket).pdf`;
+            downloadPDF(cachedPDFs.workTicket, workTicketFilename);
+        } catch (e) {
+            console.error('Error downloading work ticket:', e);
+            showError('Failed to download work ticket: ' + e.message);
+        }
+    };
+
+    // Add functions to generate and download individual PDFs
+    const generateAndDownloadLabel = async () => {
+        try {
+            if (!cachedData) {
+                throw new Error('Data not yet loaded');
+            }
+
+            // Set generating flag
+            cachedPDFs.isGenerating = true;
+            updateButtonState();
+
+            // Generate HTML content
+            const labelHTML = generateLabelHTML(cachedData);
+
+            console.log('Generating label PDF...');
+            cachedPDFs.label = await generatePDF(labelHTML, {
+                width: '100mm',
+                height: '61mm'
+            });
+
+            console.log('Label PDF generated and cached');
+
+            // Clear generating flag
+            cachedPDFs.isGenerating = false;
+            updateButtonState();
+
+            // Download the label
+            downloadLabelOnly();
+        } catch (e) {
+            console.error('Error generating label PDF:', e);
+            showError('Failed to generate label PDF: ' + e.message);
+
+            // Clear generating flag
+            cachedPDFs.isGenerating = false;
+            updateButtonState();
+        }
+    };
+
+    const generateAndDownloadWorkTicket = async () => {
+        try {
+            if (!cachedData) {
+                throw new Error('Data not yet loaded');
+            }
+
+            // Set generating flag
+            cachedPDFs.isGenerating = true;
+            updateButtonState();
+
+            // Generate HTML content
+            const workTicketHTML = generatePrintHTML(cachedData);
+
+            console.log('Generating work ticket PDF...');
+            cachedPDFs.workTicket = await generatePDF(workTicketHTML, {
+                width: '112mm',
+                height: '297mm'
+            });
+
+            console.log('Work ticket PDF generated and cached');
+
+            // Clear generating flag
+            cachedPDFs.isGenerating = false;
+            updateButtonState();
+
+            // Download the work ticket
+            downloadWorkTicketOnly();
+        } catch (e) {
+            console.error('Error generating work ticket PDF:', e);
+            showError('Failed to generate work ticket PDF: ' + e.message);
+
+            // Clear generating flag
+            cachedPDFs.isGenerating = false;
+            updateButtonState();
         }
     };
 
