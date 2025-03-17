@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LMS
 // @namespace    http://tampermonkey.net/
-// @version      1.24
+// @version      1.25
 // @description  Extracts and prints lab sheet information from 3Shape LMS
 // @author       You
 // @match        https://lms.3shape.com/ui/CaseRecord/*
@@ -462,7 +462,7 @@
         const response = await fetch("https://api.sheety.co/6565224fa65a11082d88012dd5762961/maskingTapeItemRules/sheet1/");
         const data = await response.json();
         return data.sheet1.reduce((acc, item) => {
-            acc[item.product] = item.use;
+            acc[item.product] = item;
             return acc;
         }, {});
     };
@@ -485,7 +485,8 @@
 
             // Format case items data with type lookup
             const caseItems = itemsData.data.map(item => ({
-                type: productLookup[item.Item] || "",
+                type: productLookup[item.Item]?.use || "",
+                colour: productLookup[item.Item]?.colour || "",
                 toothNum: item.ToothNum,
                 item: item.Item,
                 shade: item.Shade || ''
@@ -873,6 +874,8 @@
             .map(([type, count]) => `${count}ˣ${type}`)
             .join('\n');
 
+        const colourText = data.caseItems.map(x => x.colour).filter(x => x !== '').filter(x => x !== 'Hide').join(', ');
+
         let formattedDate = { dayAndDate: '', month: '' };
         const porcelainStep = data.productionLog.find(log => log.step.toLowerCase().includes('porcelain'));
 
@@ -973,7 +976,7 @@
         }
     </style>
 </head>
-<body>
+<body style="height: 100vh; box-sizing: border-box; display: flex; flex-direction: column; justify-content: flex-start;">
     <div class="container">
         <div class="left">${typeText || 'N/A'}</div>
         <div class="spacer"></div>
@@ -987,6 +990,11 @@
     <div class="barcode-container">
         ${barcodeSvg}
     </div>
+    <div style="flex-grow: 1;"></div>
+    <div class="colour-container" style="padding-bottom: 10px;">
+        ${colourText}
+    </div>
+</body>
 </body>
 </html>
 `;
