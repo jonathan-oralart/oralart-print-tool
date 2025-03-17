@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LMS
 // @namespace    http://tampermonkey.net/
-// @version      1.25
+// @version      1.26
 // @description  Extracts and prints lab sheet information from 3Shape LMS
 // @author       You
 // @match        https://lms.3shape.com/ui/CaseRecord/*
@@ -24,6 +24,13 @@
 
 (function () {
     'use strict';
+
+    // Add this at the top of your IIFE
+    if (window.lmsScriptInitialized) {
+        console.log("LMS Script already initialized, skipping...");
+        return;
+    }
+    window.lmsScriptInitialized = true;
 
     // Move updateButtonState outside of addPrintButton
     const updateButtonState = () => {
@@ -874,7 +881,7 @@
             .map(([type, count]) => `${count}ˣ${type}`)
             .join('\n');
 
-        const colourText = data.caseItems.map(x => x.colour).filter(x => x !== '').filter(x => x !== 'Hide').join(', ');
+        const colourText = [...new Set(data.caseItems.map(x => x.colour).filter(x => x && x !== 'Hide'))].join(', ');
 
         let formattedDate = { dayAndDate: '', month: '' };
         const porcelainStep = data.productionLog.find(log => log.step.toLowerCase().includes('porcelain'));
@@ -1292,12 +1299,55 @@
         return username;
     };
 
-    // Modify the initializeScript function to check username
+    // Add a flag to track initialization status for the current page
+    let currentPageInitialized = false;
+
+    // Modify the initializeScript function
     const initializeScript = () => {
+        console.log("Initializing LMS script");
+
+        // Get the current case ID from URL if possible
+        const currentCaseId = window.location.pathname.match(/\/ui\/CaseRecord\/(\d+)/i)?.[1];
+
+        // If we're on a case record page and it's already initialized, skip
+        if (currentCaseId && currentPageInitialized) {
+            console.log("Page already initialized, skipping...");
+            return;
+        }
+
         // Check username first
         checkUsername();
 
+        // Clean up any existing buttons before adding new ones
+        const cleanupButtons = () => {
+            const buttonsToRemove = [
+                'lab-sheet-button',
+                'view-labels-button',
+                'view-work-ticket-button',
+                'generate-label-button',
+                'generate-work-ticket-button',
+                'auto-download-checkbox'
+            ];
+
+            buttonsToRemove.forEach(id => {
+                const elements = document.querySelectorAll(`#${id}`);
+                elements.forEach(element => {
+                    if (id === 'auto-download-checkbox' && element.parentElement) {
+                        element.parentElement.remove();
+                    } else {
+                        element.remove();
+                    }
+                });
+            });
+        };
+
         if (window.location.pathname.match(/\/ui\/CaseRecord\//i)) {
+            // Clean up existing buttons first
+            cleanupButtons();
+
+            // Mark as initialized for this page
+            currentPageInitialized = true;
+
             // We're already on a CaseRecord page, initialize normally
             const button = addPrintButton();
 
@@ -1314,39 +1364,33 @@
             // Add mutation observer to detect case data changes
             setupCaseChangeObserver();
         } else if (window.location.pathname.match(/\/ui\/CaseEntry/i)) {
-            // We're on CaseEntry, set up an observer to detect URL changes
+            // Reset initialization flag when on CaseEntry
+            currentPageInitialized = false;
+
+            // Clean up existing buttons first
+            cleanupButtons();
+
+            // Rest of the CaseEntry handling...
             console.log("On CaseEntry page, waiting for redirection to CaseRecord...");
 
             // Use history API to detect navigation changes
-            originalPushState = history.pushState;
-            originalReplaceState = history.replaceState;
+            if (!originalPushState) {
+                originalPushState = history.pushState;
+                originalReplaceState = history.replaceState;
 
-            history.pushState = function () {
-                originalPushState.apply(this, arguments);
-                handleUrlChange();
-            };
+                history.pushState = function () {
+                    originalPushState.apply(this, arguments);
+                    handleUrlChange();
+                };
 
-            history.replaceState = function () {
-                originalReplaceState.apply(this, arguments);
-                handleUrlChange();
-            };
+                history.replaceState = function () {
+                    originalReplaceState.apply(this, arguments);
+                    handleUrlChange();
+                };
 
-            // Also listen for popstate events (back/forward navigation)
-            window.addEventListener('popstate', handleUrlChange);
-
-            // Check periodically for URL changes that might not trigger the above events
-            const urlCheckInterval = setInterval(() => {
-                if (window.location.pathname.match(/\/ui\/CaseRecord\//i)) {
-                    clearInterval(urlCheckInterval);
-                    console.log("Detected navigation to CaseRecord, initializing script...");
-                    const button = addPrintButton();
-                    prefetchData();
-                    document.addEventListener('keydown', handleKeyboardShortcut);
-
-                    // Add mutation observer to detect case data changes
-                    setupCaseChangeObserver();
-                }
-            }, 500);
+                // Also listen for popstate events (back/forward navigation)
+                window.addEventListener('popstate', handleUrlChange);
+            }
         }
     };
 
@@ -1469,19 +1513,28 @@
         document.removeEventListener('keydown', handleKeyboardShortcut);
     };
 
-    // Update handleUrlChange to clean up before reinitializing
+    // Modify handleUrlChange to handle initialization flag
     const handleUrlChange = () => {
         if (window.location.pathname.match(/\/ui\/CaseRecord\//i)) {
-            console.log("URL changed to CaseRecord, initializing script...");
+            console.log("URL changed to CaseRecord, reinitializing script...");
+
+            // Reset initialization flag
+            currentPageInitialized = false;
 
             // Clean up existing observers and listeners
             cleanupScript();
 
+            // Reset cached data
+            cachedData = null;
+            cachedPDFs = {
+                workTicket: null,
+                label: null,
+                isGenerating: false
+            };
+            isFetchingData = false;
+
             // Initialize for the new page
-            const button = addPrintButton();
-            prefetchData();
-            document.addEventListener('keydown', handleKeyboardShortcut);
-            setupCaseChangeObserver();
+            initializeScript();
         }
     };
 
