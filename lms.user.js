@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LMS
 // @namespace    http://tampermonkey.net/
-// @version      1.28
+// @version      1.29
 // @description  Extracts and prints lab sheet information from 3Shape LMS
 // @author       You
 // @match        https://lms.3shape.com/ui/CaseRecord/*
@@ -36,7 +36,7 @@
     const updateButtonState = () => {
         const button = document.getElementById('lab-sheet-button');
         const refreshButton = document.getElementById('refresh-button');
-        const username = GM_getValue('username2', '');
+        const username = GM_getValue('username', '');
         const isJonathan = username.toLowerCase() === 'jonathan';
 
         // Get the appropriate buttons based on user
@@ -154,7 +154,7 @@
 
     // Modify addPrintButton to conditionally create buttons
     function addPrintButton() {
-        const username = GM_getValue('username2', '');
+        const username = GM_getValue('username', '');
         const isJonathan = username.toLowerCase() === 'jonathan';
 
         // Create a flex container for all buttons
@@ -1367,6 +1367,12 @@
             return !!iframe;
         };
 
+        // Function to check for case entry container
+        const checkForCaseEntry = () => {
+            const caseEntry = document.querySelector('.case-entry-container');
+            return !!caseEntry;
+        };
+
         // Function to update button visibility
         const updateButtonVisibility = (shouldHide) => {
             const username = GM_getValue('username', '');
@@ -1374,6 +1380,7 @@
 
             const buttons = [
                 document.getElementById('lab-sheet-button'),
+                document.getElementById('refresh-button'),
                 document.getElementById('auto-download-checkbox')?.parentElement
             ];
 
@@ -1406,13 +1413,16 @@
             // Check current states
             const caseMainIsPresent = checkForCaseMain();
             const billingIframePresent = checkForBillingIframe();
+            const overlayPresent = document.querySelector('.k-overlay') !== null;
+            const caseEntryPresent = checkForCaseEntry();
 
-            // Update button visibility based on billing iframe presence
-            updateButtonVisibility(billingIframePresent);
+            // Update button visibility based on any of the conditions
+            const shouldHide = billingIframePresent || overlayPresent || caseEntryPresent;
+            updateButtonVisibility(shouldHide);
 
-            // If state changed from present to not present, clear the cache
-            if (caseMainWasPresent && !caseMainIsPresent) {
-                console.log("Case main section disappeared, clearing cache");
+            // If any hiding condition is present or case main disappeared, clear the cache
+            if (shouldHide || (caseMainWasPresent && !caseMainIsPresent)) {
+                console.log("Clearing cache due to overlay, case entry, or case main section disappearance");
                 // Reset cached data
                 cachedData = null;
                 cachedPDFs = {
@@ -1421,8 +1431,8 @@
                     isGenerating: false
                 };
             }
-            // If state changed from not present to present, fetch new data
-            else if (!caseMainWasPresent && caseMainIsPresent) {
+            // If state changed from not present to present (and no hiding conditions), fetch new data
+            else if (!caseMainWasPresent && caseMainIsPresent && !shouldHide) {
                 console.log("Case main section appeared, fetching data");
                 // Fetch new data (cache should already be cleared)
                 prefetchData();
@@ -1438,8 +1448,11 @@
             subtree: true
         });
 
-        // Initial check for billing iframe
-        updateButtonVisibility(checkForBillingIframe());
+        // Initial check for conditions that should hide buttons
+        const initialShouldHide = checkForBillingIframe() ||
+            document.querySelector('.k-overlay') !== null ||
+            checkForCaseEntry();
+        updateButtonVisibility(initialShouldHide);
     };
 
     // Also update the cleanup when the script is unloaded or the page changes
