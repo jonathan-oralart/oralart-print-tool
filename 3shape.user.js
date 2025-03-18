@@ -149,6 +149,12 @@
         const parser = new DOMParser();
         const doc = parser.parseFromString(htmlContent, 'text/html');
 
+        // Add 3Shape div to the body
+        const shapeDiv = document.createElement('div');
+        shapeDiv.style.position = 'absolute';
+        shapeDiv.textContent = '3Shape';
+        doc.body.insertBefore(shapeDiv, doc.body.firstChild);
+
         // Remove the specified element
         const elementToRemove = doc.querySelector("body > table.tableMain > tbody > tr:nth-child(1) > td:nth-child(1)");
         if (elementToRemove) {
