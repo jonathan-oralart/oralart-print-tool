@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         3Shape Print
 // @namespace    http://tampermonkey.net/
-// @version      0.5
+// @version      0.6
 // @description  Interact with blob content
 // @match        https://portal.3shapecommunicate.com/*
 // @icon         data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==
