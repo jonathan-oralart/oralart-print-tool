@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LMS
 // @namespace    http://tampermonkey.net/
-// @version      1.27
+// @version      1.28
 // @description  Extracts and prints lab sheet information from 3Shape LMS
 // @author       You
 // @match        https://lms.3shape.com/ui/CaseRecord/*
@@ -1324,6 +1324,21 @@
                 // Also listen for popstate events (back/forward navigation)
                 window.addEventListener('popstate', handleUrlChange);
             }
+
+            // Check periodically for URL changes that might not trigger the above events
+            const urlCheckInterval = setInterval(() => {
+                if (window.location.pathname.match(/\/ui\/CaseRecord\//i)) {
+                    clearInterval(urlCheckInterval);
+                    console.log("Detected navigation to CaseRecord, initializing script...");
+                    // const button = addPrintButton();
+                    // prefetchData();
+                    // document.addEventListener('keydown', handleKeyboardShortcut);
+
+                    // Add mutation observer to detect case data changes
+                    setupCaseChangeObserver();
+                }
+            }, 500);
+
         }
     };
 
