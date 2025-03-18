@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LMS
 // @namespace    http://tampermonkey.net/
-// @version      1.26
+// @version      1.27
 // @description  Extracts and prints lab sheet information from 3Shape LMS
 // @author       You
 // @match        https://lms.3shape.com/ui/CaseRecord/*
@@ -35,6 +35,7 @@
     // Move updateButtonState outside of addPrintButton
     const updateButtonState = () => {
         const button = document.getElementById('lab-sheet-button');
+        const refreshButton = document.getElementById('refresh-button');
         const username = GM_getValue('username2', '');
         const isJonathan = username.toLowerCase() === 'jonathan';
 
@@ -44,189 +45,134 @@
         const generateLabelButton = document.getElementById('generate-label-button');
         const generateWorkTicketButton = document.getElementById('generate-work-ticket-button');
 
-        if (!button) return;
+        if (!button || !refreshButton) return;
 
         // Determine which buttons exist based on user type
         const hasViewButtons = isJonathan && viewLabelsButton && viewWorkTicketButton;
         const hasGenerateButtons = !isJonathan && generateLabelButton && generateWorkTicketButton;
 
-        if (cachedPDFs.isGenerating) {
-            button.textContent = 'Waiting...';
-            button.style.background = '#cccccc';
-            button.style.cursor = 'not-allowed';
-            button.onclick = null;
+        // Helper function to set button state
+        const setButtonState = (btn, text, isEnabled, clickHandler = null) => {
+            if (btn) {
+                btn.textContent = text;
+                btn.style.background = isEnabled ? '#4a4a4a' : '#cccccc';
+                btn.style.cursor = isEnabled ? 'pointer' : 'not-allowed';
+                btn.onclick = isEnabled ? clickHandler : null;
+            }
+        };
+
+        // Special helper for refresh button to maintain text
+        const setRefreshButtonState = (isEnabled) => {
+            if (refreshButton) {
+                refreshButton.style.background = isEnabled ? '#4a4a4a' : '#cccccc';
+                refreshButton.style.cursor = isEnabled ? 'pointer' : 'not-allowed';
+                refreshButton.onclick = isEnabled ? prefetchData : null;
+            }
+        };
+
+        if (isFetchingData) {
+            // When fetching data, all buttons should show "Fetching..." state except refresh
+            setButtonState(button, 'Fetching...', false);
+            setRefreshButtonState(false);  // Keep text as "Refresh" but disable
 
             if (hasViewButtons) {
-                viewLabelsButton.style.background = '#cccccc';
-                viewLabelsButton.style.cursor = 'not-allowed';
-                viewLabelsButton.onclick = null;
-
-                viewWorkTicketButton.style.background = '#cccccc';
-                viewWorkTicketButton.style.cursor = 'not-allowed';
-                viewWorkTicketButton.onclick = null;
+                setButtonState(viewLabelsButton, 'Fetching...', false);
+                setButtonState(viewWorkTicketButton, 'Fetching...', false);
             }
 
             if (hasGenerateButtons) {
-                generateLabelButton.textContent = 'Waiting...';
-                generateLabelButton.style.background = '#cccccc';
-                generateLabelButton.style.cursor = 'not-allowed';
-                generateLabelButton.onclick = null;
+                setButtonState(generateLabelButton, 'Fetching...', false);
+                setButtonState(generateWorkTicketButton, 'Fetching...', false);
+            }
+        } else if (cachedPDFs.isGenerating) {
+            // When generating PDFs, show "Waiting..." state
+            setButtonState(button, 'Waiting...', false);
+            setRefreshButtonState(false);
 
-                generateWorkTicketButton.textContent = 'Waiting...';
-                generateWorkTicketButton.style.background = '#cccccc';
-                generateWorkTicketButton.style.cursor = 'not-allowed';
-                generateWorkTicketButton.onclick = null;
+            if (hasViewButtons) {
+                setButtonState(viewLabelsButton, 'View Label', false);
+                setButtonState(viewWorkTicketButton, 'View Work Ticket', false);
+            }
+
+            if (hasGenerateButtons) {
+                setButtonState(generateLabelButton, 'Waiting...', false);
+                setButtonState(generateWorkTicketButton, 'Waiting...', false);
             }
         } else if (cachedData && !cachedPDFs.workTicket && !cachedPDFs.label) {
-            button.textContent = 'Generate PDF';
-            button.style.background = '#4a4a4a';
-            button.style.cursor = 'pointer';
-            button.onclick = generatePDFs;
+            // When data is loaded but no PDFs generated
+            setButtonState(button, 'Generate PDF', true, generatePDFs);
+            setRefreshButtonState(true);
 
             if (hasViewButtons) {
-                viewLabelsButton.textContent = 'View Label';
-                viewLabelsButton.style.background = '#4a4a4a';
-                viewLabelsButton.style.cursor = 'pointer';
-                viewLabelsButton.onclick = viewLabels;
-
-                viewWorkTicketButton.textContent = 'View Work Ticket';
-                viewWorkTicketButton.style.background = '#4a4a4a';
-                viewWorkTicketButton.style.cursor = 'pointer';
-                viewWorkTicketButton.onclick = viewWorkTicket;
+                setButtonState(viewLabelsButton, 'View Label', true, viewLabels);
+                setButtonState(viewWorkTicketButton, 'View Work Ticket', true, viewWorkTicket);
             }
 
             if (hasGenerateButtons) {
-                generateLabelButton.textContent = 'Generate Label';
-                generateLabelButton.style.background = '#4a4a4a';
-                generateLabelButton.style.cursor = 'pointer';
-                generateLabelButton.onclick = generateAndDownloadLabel;
-
-                generateWorkTicketButton.textContent = 'Generate Work Ticket';
-                generateWorkTicketButton.style.background = '#4a4a4a';
-                generateWorkTicketButton.style.cursor = 'pointer';
-                generateWorkTicketButton.onclick = generateAndDownloadWorkTicket;
+                setButtonState(generateLabelButton, 'Generate Label', true, generateAndDownloadLabel);
+                setButtonState(generateWorkTicketButton, 'Generate Work Ticket', true, generateAndDownloadWorkTicket);
             }
         } else if (cachedData && (cachedPDFs.workTicket || cachedPDFs.label)) {
-            button.textContent = 'Download';
-            button.style.background = '#4a4a4a';
-            button.style.cursor = 'pointer';
-            button.onclick = downloadPDFs;
+            // When PDFs are generated
+            setButtonState(button, 'Download', true, downloadPDFs);
+            setRefreshButtonState(true);
 
             if (hasViewButtons) {
-                viewLabelsButton.textContent = 'View Label';
-                viewLabelsButton.style.background = '#4a4a4a';
-                viewLabelsButton.style.cursor = 'pointer';
-                viewLabelsButton.onclick = viewLabels;
-
-                viewWorkTicketButton.textContent = 'View Work Ticket';
-                viewWorkTicketButton.style.background = '#4a4a4a';
-                viewWorkTicketButton.style.cursor = 'pointer';
-                viewWorkTicketButton.onclick = viewWorkTicket;
+                setButtonState(viewLabelsButton, 'View Label', true, viewLabels);
+                setButtonState(viewWorkTicketButton, 'View Work Ticket', true, viewWorkTicket);
             }
 
             if (hasGenerateButtons) {
-                // If label is already generated, show download button
                 if (cachedPDFs.label) {
-                    generateLabelButton.textContent = 'Download Label';
-                    generateLabelButton.style.background = '#4a4a4a';
-                    generateLabelButton.style.cursor = 'pointer';
-                    generateLabelButton.onclick = downloadLabelOnly;
+                    setButtonState(generateLabelButton, 'Download Label', true, downloadLabelOnly);
                 } else {
-                    generateLabelButton.textContent = 'Generate Label';
-                    generateLabelButton.style.background = '#4a4a4a';
-                    generateLabelButton.style.cursor = 'pointer';
-                    generateLabelButton.onclick = generateAndDownloadLabel;
+                    setButtonState(generateLabelButton, 'Generate Label', true, generateAndDownloadLabel);
                 }
 
-                // If work ticket is already generated, show download button
                 if (cachedPDFs.workTicket) {
-                    generateWorkTicketButton.textContent = 'Download Work Ticket';
-                    generateWorkTicketButton.style.background = '#4a4a4a';
-                    generateWorkTicketButton.style.cursor = 'pointer';
-                    generateWorkTicketButton.onclick = downloadWorkTicketOnly;
+                    setButtonState(generateWorkTicketButton, 'Download Work Ticket', true, downloadWorkTicketOnly);
                 } else {
-                    generateWorkTicketButton.textContent = 'Generate Work Ticket';
-                    generateWorkTicketButton.style.background = '#4a4a4a';
-                    generateWorkTicketButton.style.cursor = 'pointer';
-                    generateWorkTicketButton.onclick = generateAndDownloadWorkTicket;
+                    setButtonState(generateWorkTicketButton, 'Generate Work Ticket', true, generateAndDownloadWorkTicket);
                 }
-            }
-        } else if (isFetchingData) {
-            button.textContent = 'Fetching...';
-            button.style.background = '#cccccc';
-            button.style.cursor = 'not-allowed';
-            button.onclick = null;
-
-            if (hasViewButtons) {
-                viewLabelsButton.textContent = 'Fetching...';
-                viewLabelsButton.style.background = '#cccccc';
-                viewLabelsButton.style.cursor = 'not-allowed';
-                viewLabelsButton.onclick = null;
-
-                viewWorkTicketButton.textContent = 'Fetching...';
-                viewWorkTicketButton.style.background = '#cccccc';
-                viewWorkTicketButton.style.cursor = 'not-allowed';
-                viewWorkTicketButton.onclick = null;
-            }
-
-            if (hasGenerateButtons) {
-                generateLabelButton.textContent = 'Fetching...';
-                generateLabelButton.style.background = '#cccccc';
-                generateLabelButton.style.cursor = 'not-allowed';
-                generateLabelButton.onclick = null;
-
-                generateWorkTicketButton.textContent = 'Fetching...';
-                generateWorkTicketButton.style.background = '#cccccc';
-                generateWorkTicketButton.style.cursor = 'not-allowed';
-                generateWorkTicketButton.onclick = null;
             }
         } else {
-            button.textContent = 'Retry Data';
-            button.style.background = '#4a4a4a';
-            button.style.cursor = 'pointer';
-            button.onclick = prefetchData;
+            // When no data is loaded or error state
+            setButtonState(button, 'Retry Data', true, prefetchData);
+            setRefreshButtonState(true);
 
             if (hasViewButtons) {
-                viewLabelsButton.textContent = 'Retry Data';
-                viewLabelsButton.style.background = '#4a4a4a';
-                viewLabelsButton.style.cursor = 'pointer';
-                viewLabelsButton.onclick = prefetchData;
-
-                viewWorkTicketButton.textContent = 'Retry Data';
-                viewWorkTicketButton.style.background = '#4a4a4a';
-                viewWorkTicketButton.style.cursor = 'pointer';
-                viewWorkTicketButton.onclick = prefetchData;
+                setButtonState(viewLabelsButton, 'Retry Data', true, prefetchData);
+                setButtonState(viewWorkTicketButton, 'Retry Data', true, prefetchData);
             }
 
             if (hasGenerateButtons) {
-                generateLabelButton.textContent = 'Retry Data';
-                generateLabelButton.style.background = '#4a4a4a';
-                generateLabelButton.style.cursor = 'pointer';
-                generateLabelButton.onclick = prefetchData;
-
-                generateWorkTicketButton.textContent = 'Retry Data';
-                generateWorkTicketButton.style.background = '#4a4a4a';
-                generateWorkTicketButton.style.cursor = 'pointer';
-                generateWorkTicketButton.onclick = prefetchData;
+                setButtonState(generateLabelButton, 'Retry Data', true, prefetchData);
+                setButtonState(generateWorkTicketButton, 'Retry Data', true, prefetchData);
             }
         }
     };
 
     // Modify addPrintButton to conditionally create buttons
     function addPrintButton() {
-        // Get the username and check if it's Jonathan
         const username = GM_getValue('username2', '');
         const isJonathan = username.toLowerCase() === 'jonathan';
 
-        const button = document.createElement('button');
-        button.id = 'lab-sheet-button';
-        button.textContent = 'Fetching...';
-        button.style.cssText = `
-            position: fixed;
-            width: 140px;
+        // Create a flex container for all buttons
+        const buttonContainer = document.createElement('div');
+        buttonContainer.id = 'lms-button-container';
+        buttonContainer.style.cssText = `
+            position: absolute;
             top: 41px;
             right: 32px;
             z-index: 10000;
+            display: flex;
+            flex-direction: row-reverse;
+            gap: 10px;
+            align-items: center;
+        `;
+
+        // Common button styles
+        const buttonStyles = `
             padding: 8px 16px;
             background: #cccccc;
             color: white;
@@ -236,10 +182,77 @@
             transition: all 0.3s ease;
         `;
 
-        // Create auto-download checkbox
+        // Create refresh button
+        const refreshButton = document.createElement('button');
+        refreshButton.id = 'refresh-button';
+        refreshButton.textContent = 'Refresh';
+        refreshButton.style.cssText = `
+            ${buttonStyles}
+            width: 80px;
+        `;
+        refreshButton.onclick = prefetchData;
+
+        // Create main button
+        const button = document.createElement('button');
+        button.id = 'lab-sheet-button';
+        button.textContent = 'Fetching...';
+        button.style.cssText = `
+            ${buttonStyles}
+            width: 140px;
+        `;
+
+        if (isJonathan) {
+            // Create view buttons
+            const viewWorkTicketButton = document.createElement('button');
+            viewWorkTicketButton.id = 'view-work-ticket-button';
+            viewWorkTicketButton.textContent = 'View Work Ticket';
+            viewWorkTicketButton.style.cssText = `
+                ${buttonStyles}
+                width: 140px;
+            `;
+
+            const viewLabelsButton = document.createElement('button');
+            viewLabelsButton.id = 'view-labels-button';
+            viewLabelsButton.textContent = 'View Label';
+            viewLabelsButton.style.cssText = `
+                ${buttonStyles}
+                width: 140px;
+            `;
+
+            // Add buttons in reverse order (right to left)
+            buttonContainer.appendChild(button);
+            buttonContainer.appendChild(viewLabelsButton);
+            buttonContainer.appendChild(viewWorkTicketButton);
+            buttonContainer.appendChild(refreshButton);
+        } else {
+            // Create generate buttons
+            const generateWorkTicketButton = document.createElement('button');
+            generateWorkTicketButton.id = 'generate-work-ticket-button';
+            generateWorkTicketButton.textContent = 'Generate Work Ticket';
+            generateWorkTicketButton.style.cssText = `
+                ${buttonStyles}
+                width: 170px;
+            `;
+
+            const generateLabelButton = document.createElement('button');
+            generateLabelButton.id = 'generate-label-button';
+            generateLabelButton.textContent = 'Generate Label';
+            generateLabelButton.style.cssText = `
+                ${buttonStyles}
+                width: 140px;
+            `;
+
+            // Add buttons in reverse order (right to left)
+            buttonContainer.appendChild(button);
+            buttonContainer.appendChild(generateLabelButton);
+            buttonContainer.appendChild(generateWorkTicketButton);
+            buttonContainer.appendChild(refreshButton);
+        }
+
+        // Create auto-download checkbox container
         const checkboxContainer = document.createElement('div');
         checkboxContainer.style.cssText = `
-            position: fixed;
+            position: absolute;
             top: 80px;
             right: 32px;
             z-index: 10000;
@@ -252,7 +265,7 @@
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
         checkbox.id = 'auto-download-checkbox';
-        checkbox.checked = GM_getValue('auto-download', true); // Default to true
+        checkbox.checked = GM_getValue('auto-download', true);
         checkbox.style.marginRight = '5px';
 
         checkbox.addEventListener('change', function () {
@@ -274,92 +287,9 @@
             }
         }, 100);
 
-        document.body.appendChild(button);
+        // Append containers to document
+        document.body.appendChild(buttonContainer);
         document.body.appendChild(checkboxContainer);
-
-        if (isJonathan) {
-            // Create view labels button
-            const viewLabelsButton = document.createElement('button');
-            viewLabelsButton.id = 'view-labels-button';
-            viewLabelsButton.textContent = 'View Label';
-            viewLabelsButton.style.cssText = `
-                position: fixed;
-                width: 140px;
-                top: 41px;
-                right: 182px;
-                z-index: 10000;
-                padding: 8px 16px;
-                background: #cccccc;
-                color: white;
-                border: none;
-                border-radius: 4px;
-                cursor: not-allowed;
-                transition: all 0.3s ease;
-            `;
-
-            // Create view work ticket button
-            const viewWorkTicketButton = document.createElement('button');
-            viewWorkTicketButton.id = 'view-work-ticket-button';
-            viewWorkTicketButton.textContent = 'View Work Ticket';
-            viewWorkTicketButton.style.cssText = `
-                position: fixed;
-                width: 140px;
-                top: 41px;
-                right: 332px;
-                z-index: 10000;
-                padding: 8px 16px;
-                background: #cccccc;
-                color: white;
-                border: none;
-                border-radius: 4px;
-                cursor: not-allowed;
-                transition: all 0.3s ease;
-            `;
-
-            document.body.appendChild(viewLabelsButton);
-            document.body.appendChild(viewWorkTicketButton);
-        } else {
-            // Create generate label button for non-Jonathan users
-            const generateLabelButton = document.createElement('button');
-            generateLabelButton.id = 'generate-label-button';
-            generateLabelButton.textContent = 'Generate Label';
-            generateLabelButton.style.cssText = `
-                position: fixed;
-                width: 140px;
-                top: 41px;
-                right: 182px;
-                z-index: 10000;
-                padding: 8px 16px;
-                background: #cccccc;
-                color: white;
-                border: none;
-                border-radius: 4px;
-                cursor: not-allowed;
-                transition: all 0.3s ease;
-            `;
-
-            // Create generate work ticket button for non-Jonathan users
-            const generateWorkTicketButton = document.createElement('button');
-            generateWorkTicketButton.id = 'generate-work-ticket-button';
-            generateWorkTicketButton.textContent = 'Generate Work Ticket';
-            generateWorkTicketButton.style.cssText = `
-                position: fixed;
-                width: 170px;
-                top: 41px;
-                right: 332px;
-                z-index: 10000;
-                padding: 8px 16px;
-                background: #cccccc;
-                color: white;
-                border: none;
-                border-radius: 4px;
-                cursor: not-allowed;
-                transition: all 0.3s ease;
-            `;
-
-            document.body.appendChild(generateLabelButton);
-            document.body.appendChild(generateWorkTicketButton);
-        }
 
         return button;
     }
@@ -1132,8 +1062,15 @@
         }
 
         try {
+            // Reset cached PDFs when refreshing data
+            cachedPDFs = {
+                workTicket: null,
+                label: null,
+                isGenerating: false
+            };
+
             isFetchingData = true;
-            updateButtonState(); // This will show "Fetching..." state
+            updateButtonState(); // This will set all buttons to "Fetching..." state
 
             // Fetch data
             cachedData = await getData();
@@ -1157,7 +1094,7 @@
             };
         } finally {
             isFetchingData = false;
-            updateButtonState(); // This will show either success state or "Retry Data"
+            updateButtonState(); // This will update buttons to appropriate state
         }
     };
 
@@ -1321,11 +1258,7 @@
         // Clean up any existing buttons before adding new ones
         const cleanupButtons = () => {
             const buttonsToRemove = [
-                'lab-sheet-button',
-                'view-labels-button',
-                'view-work-ticket-button',
-                'generate-label-button',
-                'generate-work-ticket-button',
+                'lms-button-container',  // Add the container to cleanup
                 'auto-download-checkbox'
             ];
 
