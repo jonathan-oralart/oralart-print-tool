@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LMS
 // @namespace    http://tampermonkey.net/
-// @version      1.29
+// @version      1.30
 // @description  Extracts and prints lab sheet information from 3Shape LMS
 // @author       You
 // @match        https://lms.3shape.com/ui/CaseRecord/*
@@ -421,13 +421,20 @@
             ]);
 
             // Format case items data with type lookup
-            const caseItems = itemsData.data.map(item => ({
-                type: productLookup[item.Item]?.use || "",
-                colour: productLookup[item.Item]?.colour || "",
-                toothNum: item.ToothNum,
-                item: item.Item,
-                shade: item.Shade || ''
-            }));
+            const caseItems = itemsData.data.map(item => {
+                // Try original item name first, if not found try without " (inc. models)"
+                const lookupItem = productLookup[item.Item] ||
+                    productLookup[item.Item.replace(" (inc. models)", "")] ||
+                    {};
+
+                return {
+                    type: lookupItem.use || "",
+                    colour: lookupItem.colour || "",
+                    toothNum: item.ToothNum,
+                    item: item.Item,
+                    shade: item.Shade || ''
+                };
+            });
 
             // Format production log data
             const productionLog = productionData.data.map(task => ({
