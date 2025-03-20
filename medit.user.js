@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Meddit 2
 // @namespace    http://tampermonkey.net/
-// @version      0.1
+// @version      0.2
 // @description  try to take over the world!
 // @author       You
 // @match        https://www.meditlink.com/inbox/*
@@ -58,7 +58,7 @@
                         left: '2mm'
                     },
                     printBackground: true,
-                    scale: 1.15
+                    scale: 0.68
                 },
                 setContent: {
                     html: encodedHTML
@@ -114,7 +114,9 @@
 
             // Open a preview in a new tab
             const previewWindow = window.open();
-            previewWindow.document.write(`
+            //
+            // previewWindow.document.write(`
+            const htmlFull = `
                 <!DOCTYPE html>
                 <html>
                 <head>
@@ -133,6 +135,11 @@
                             justify-content: space-between;
                             align-items: center;
                         }
+                        @media print {
+                            .preview-header {
+                                display: none;
+                            }
+                        }
                         .preview-header button {
                             padding: 8px 16px;
                             background: #4285f4;
@@ -144,6 +151,189 @@
                         .preview-header button:hover {
                             background: #3367d6;
                         }
+                        
+                        /* General styles */
+body {
+  font-family: Arial, sans-serif;
+  line-height: 1.5;
+  color: #333;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* Header styles */
+.case-information {
+  width: 100%;
+}
+
+.header-case-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #e0e0e0;
+  padding-bottom: 10px;
+  margin-bottom: 20px;
+}
+
+.header-case-info-title {
+  font-size: 24px;
+  font-weight: bold;
+  margin: 0;
+  color: #333;
+}
+
+.header-case-info-title::before {
+  content: "Medit Link - ";
+}
+
+.logo-meditlink {
+  height: 30px;
+}
+
+/* Main information styles */
+.main-case-info {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.text-info {
+  flex: 1;
+}
+
+.info-list {
+  list-style-type: none;
+  padding: 0;
+  margin: 0 0 20px 0;
+}
+
+.list-item {
+  display: flex;
+  margin-bottom: 8px;
+}
+
+.item-label {
+  font-weight: bold;
+  min-width: 120px;
+}
+
+.item-value {
+  flex: 1;
+}
+
+h2 {
+  font-size: 18px;
+  margin: 20px 0 10px 0;
+  border-bottom: 1px solid #e0e0e0;
+  padding-bottom: 5px;
+}
+
+/* Form information styles */
+.form-info-wrapper {
+  margin-top: 20px;
+}
+
+.input-field label {
+  display: block;
+  font-size: 16px;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.form-info-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+.form-info-table th, 
+.form-info-table td {
+  padding: 8px;
+  text-align: left;
+  border: 1px solid #e0e0e0;
+}
+
+.form-info-table-header {
+  background-color: #f5f5f5;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.tooth-number-header {
+  width: 60px;
+}
+
+/* Memo section */
+.memo {
+  margin-top: 20px;
+}
+
+.memo h2 {
+  font-size: 16px;
+  margin-bottom: 10px;
+}
+
+.memo-content {
+  border: 1px solid #e0e0e0;
+  padding: 15px;
+  border-radius: 4px;
+  background-color: #f9f9f9;
+}
+
+/* Footer styles */
+.case-information-footer {
+  margin-top: 30px;
+  border-top: 1px solid #e0e0e0;
+  padding-top: 15px;
+  text-align: center;
+  font-size: 12px;
+  color: #777;
+}
+
+.link-url {
+  margin-bottom: 5px;
+}
+
+.link-url a {
+  color: #007bff;
+  text-decoration: none;
+}
+
+.copyright {
+  font-size: 11px;
+}
+
+/* Form Information section header */
+.form-information-header {
+  font-size: 16px;
+  font-weight: bold;
+  margin: 20px 0 10px 0;
+}
+
+/* Additional styling for the table */
+.form-info-table th {
+  background-color: #f8f9fa;
+  font-weight: bold;
+}
+
+/* Styling specifically for memo section */
+.memo-box {
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  padding: 15px;
+  margin-top: 10px;
+  background-color: #f9f9f9;
+  line-height: 1.6;
+}
+
+.memo-info-container {
+    white-space: pre-line;
+    font-size: 18px;
+    font-family: sans-serif;
+}
                     </style>
                 </head>
                 <body>
@@ -161,7 +351,8 @@
                     </script>
                 </body>
                 </html>
-            `);
+            `;
+            previewWindow.document.write(htmlFull);
             previewWindow.document.close();
 
             // Listen for the message from the preview window
@@ -172,7 +363,7 @@
 
                         try {
                             // Generate PDF
-                            const pdfResponse = await generatePDF(htmlContent);
+                            const pdfResponse = await generatePDF(htmlFull);
                             console.log("PDF generated successfully");
 
                             // Download the PDF
@@ -245,6 +436,11 @@
 
         const element = document.querySelector(selector);
 
+        element.style = '';
+
+        element.querySelectorAll('img').forEach(img => img.remove());
+
+
         if (!element) {
             console.error('Element not found');
             return '';
@@ -252,75 +448,6 @@
 
         // Clone the element
         const clone = element.cloneNode(true);
-
-        // Process the clone and all its descendants
-        function processElement(el, originalEl) {
-            // Skip if this is a text node
-            if (el.nodeType !== Node.ELEMENT_NODE) return;
-
-            // Get computed styles from the original element
-            const computedStyle = window.getComputedStyle(originalEl);
-            const inlineStyle = {};
-
-            // Get unique property names from computed styles
-            const propertyNames = [];
-            for (let i = 0; i < computedStyle.length; i++) {
-                propertyNames.push(computedStyle[i]);
-            }
-
-            // Filter and process each style property
-            propertyNames.forEach(prop => {
-                // Skip properties we always want to remove
-                if (config.removeProperties.includes(prop)) return;
-
-                const value = computedStyle.getPropertyValue(prop);
-
-                // Skip default/initial values if configured
-                if (config.removeDefaults &&
-                    (value === 'initial' || value === 'none' || value === 'auto' ||
-                        value === '0px' || value === 'normal' || value === '0' || value === '')) {
-                    return;
-                }
-
-                // Always keep explicitly specified properties
-                if (config.keepProperties.includes(prop)) {
-                    inlineStyle[prop] = value;
-                    return;
-                }
-
-                // Skip browser-specific prefixes if simplifying
-                if (config.simplifyStyles && prop.startsWith('-webkit-') &&
-                    !config.keepProperties.includes(prop)) {
-                    return;
-                }
-
-                // Skip redundant position properties if simplifying
-                if (config.simplifyStyles &&
-                    (prop.includes('-origin') || prop.includes('-position')) &&
-                    value.includes('0%') && !config.keepProperties.includes(prop)) {
-                    return;
-                }
-
-                // Add the property if it passes all filters
-                inlineStyle[prop] = value;
-            });
-
-            // Apply filtered styles inline
-            Object.keys(inlineStyle).forEach(prop => {
-                el.style[prop] = inlineStyle[prop];
-            });
-
-            // Process children recursively
-            Array.from(el.children).forEach((child, index) => {
-                const originalChild = originalEl.children[index];
-                if (originalChild) {
-                    processElement(child, originalChild);
-                }
-            });
-        }
-
-        // Add styles to the clone and all its children
-        processElement(clone, element);
 
         // Create a temporary container to get the HTML
         const container = document.createElement('div');
