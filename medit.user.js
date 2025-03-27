@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Meddit 2
 // @namespace    http://tampermonkey.net/
-// @version      0.2
+// @version      0.3
 // @description  try to take over the world!
 // @author       You
 // @match        https://www.meditlink.com/inbox/*
@@ -366,9 +366,22 @@ h2 {
                             const pdfResponse = await generatePDF(htmlFull);
                             console.log("PDF generated successfully");
 
-                            // Download the PDF
-                            downloadPDF(pdfResponse, 'medit_print.pdf');
-                            console.log("PDF downloaded");
+                            // Create a temporary DOM parser
+                            const parser = new DOMParser();
+                            const doc = parser.parseFromString(htmlFull, 'text/html');
+
+                            // Get the patient name from the parsed HTML
+                            const patientName = [...doc.querySelectorAll(".list-item")]
+                                .map(x => x.innerText)
+                                .filter(x => x.startsWith("Patient Name"))?.[0]
+                                ?.split(":").at(-1).trim() || 'Unknown';
+
+                            // Use the patient name in the download filename
+                            const blob = new Blob([pdfResponse.response], { type: 'application/pdf' });
+                            const link = document.createElement('a');
+                            link.href = window.URL.createObjectURL(blob);
+                            link.download = `${patientName} Medit.pdf`;
+                            link.click();
 
                             resolve();
                         } catch (error) {
