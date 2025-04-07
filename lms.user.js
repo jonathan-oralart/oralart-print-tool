@@ -822,7 +822,37 @@
         const colourText = [...new Set(data.caseItems.map(x => x.colour).filter(x => x && x !== 'Hide'))].join(', ');
 
         let formattedDate = { dayAndDate: '', month: '' };
-        const porcelainStep = data.productionLog.find(log => log.step.toLowerCase().includes('porcelain'));
+
+        const mainDateSteps = [
+            "CAD Design",
+            "Set Up",
+            "Porcelain",
+            "Substructure",
+            "Stain, glaze & fit",
+            "Digital Denture Work",
+            "Technician's Desk",
+            "Cast printed crown/coping",
+            "Digital Wax-Up",
+            "Denture Process/Finish Acrylic",
+            "Denture Process/Finish Valplast & Thermosense",
+            "Metal Work",
+            "Make simple appliance",
+            "Wax-Ups"
+        ].map(x => x.toLowerCase());
+
+        const matchingSteps = data.productionLog.filter(log =>
+            mainDateSteps.includes(log.step.toLowerCase())
+        );
+
+        const porcelainStep = matchingSteps.length > 0
+            ? matchingSteps.reduce((latest, current) => {
+                // If no latest yet, or current is more recent
+                if (!latest || current.rawDate > latest.rawDate) {
+                    return current;
+                }
+                return latest;
+            }, null)
+            : null;
 
         const formatDate = (isoDate) => {
             if (!isoDate) return { dayAndDate: '', month: '' };
@@ -852,8 +882,11 @@
 
         if (porcelainStep && porcelainStep.rawDate) {
             formattedDate = formatDate(porcelainStep.rawDate);
-        } else if (data.productionLog.length > 0) {
-            formattedDate = formatDate(subtractWorkingDay(data.productionLog[data.productionLog.length - 1].rawDate));
+        } else {
+            formattedDate = {
+                dayAndDate: 'ERROR',
+                month: ''
+            }
         }
 
         // Generate barcode SVG directly
