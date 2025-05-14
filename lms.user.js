@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LMS
 // @namespace    http://tampermonkey.net/
-// @version      1.32
+// @version      1.33
 // @description  Extracts and prints lab sheet information from 3Shape LMS
 // @author       You
 // @match        https://lms.3shape.com/ui/CaseRecord/*
@@ -334,8 +334,12 @@
     // Rest of your existing functions remain the same
     const formatAPIDate = (isoDate) => {
         if (!isoDate) return 'N/A';
-        const date = new Date(isoDate);
-        return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}`;
+
+        // Extract date parts directly from the ISO string to avoid timezone issues
+        const [year, month, day] = isoDate.split('T')[0].split('-').map(Number);
+
+        // Return in DD/MM format
+        return `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}`;
     };
 
     const getCaseId = () => {
@@ -500,20 +504,20 @@
         }
     };
 
+    const formatDueDate = (dateStr) => {
+        if (!dateStr || dateStr === 'N/A') return { day: '', rest: '' };
+        const [day, month] = dateStr.split('/').map(Number);
+        const date = new Date(new Date().getFullYear(), month - 1, day);
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        return {
+            day: String(day).padStart(2, '0'),
+            rest: `${months[date.getMonth()]} (${days[date.getDay()]})`
+        };
+    };
+
     const generatePrintHTML = (data) => {
         // Format due date for the black box
-        const formatDueDate = (dateStr) => {
-            if (!dateStr || dateStr === 'N/A') return { day: '', rest: '' };
-            const [day, month] = dateStr.split('/').map(Number);
-            const date = new Date(new Date().getFullYear(), month - 1, day);
-            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-            const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-            return {
-                day: String(day).padStart(2, '0'),
-                rest: `${months[date.getMonth()]} (${days[date.getDay()]})`
-            };
-        };
-
         const dueDateTime = formatDueDate(data.dueDate);
 
         // Generate barcode SVG directly
