@@ -100,7 +100,7 @@
             }
         } else if (cachedData && !cachedPDFs.workTicket && !cachedPDFs.label) {
             // When data is loaded but no PDFs generated
-            setButtonState(button, 'Generate PDF', true, generatePDFs);
+            setButtonState(button, 'Print Both', true, generatePDFs);
             setRefreshButtonState(true);
 
             if (hasViewButtons) {
@@ -109,8 +109,8 @@
             }
 
             if (hasGenerateButtons) {
-                setButtonState(generateLabelButton, 'Generate Label', true, generateAndDownloadLabel);
-                setButtonState(generateWorkTicketButton, 'Generate Work Ticket', true, generateAndDownloadWorkTicket);
+                setButtonState(generateLabelButton, 'Print Label', true, generateAndDownloadLabel);
+                setButtonState(generateWorkTicketButton, 'Print Work Ticket', true, generateAndDownloadWorkTicket);
             }
         } else if (cachedData && (cachedPDFs.workTicket || cachedPDFs.label)) {
             // When PDFs are generated
@@ -132,7 +132,7 @@
                 if (cachedPDFs.workTicket) {
                     setButtonState(generateWorkTicketButton, 'Download Work Ticket', true, downloadWorkTicketOnly);
                 } else {
-                    setButtonState(generateWorkTicketButton, 'Generate Work Ticket', true, generateAndDownloadWorkTicket);
+                    setButtonState(generateWorkTicketButton, 'Print Work Ticket', true, generateAndDownloadWorkTicket);
                 }
             }
         } else {
