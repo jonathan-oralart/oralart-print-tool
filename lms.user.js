@@ -897,7 +897,7 @@
         const tempSvg = document.createElement('svg');
         JsBarcode(tempSvg, data.barcode, {
             format: "CODE128",
-            width: 2,
+            width: 1.0,
             height: 20,
             displayValue: false,
             fontSize: 16,
@@ -920,63 +920,76 @@
             width: 100%;
             align-items: start;
             font-size: 28px;
-            margin-bottom: 10px;
+            margin-bottom: 5px;
         }
         .left { 
             text-align: left;
             word-break: normal;
             white-space: pre-line;
             line-height: 1.2;
+            flex: 1;
         }
-        .center { 
+        .center-column {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+        }
+        .day-date {
             text-align: center;
             white-space: nowrap;
             font-weight: bold;
         }
-        .center .day-date {
-        }
-        .center .month {
+        .month-container {
+            text-align: center;
             font-size: 20px;
-            display: block;
-            line-height: 1;
+            font-weight: bold;
+            margin-top: -5px;
         }
         .right { 
             text-align: right;
             white-space: nowrap;
+            flex: 1;
         }
-        .spacer {
-            flex-grow: 1;
+        .second-line {
+            transform: translate(0px, -23px);
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            width: 100%;
         }
         .barcode-container {
-            width: 100%;
-            text-align: center;
-            margin-top: 5px;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            max-width: 60%;
+            overflow: hidden;
         }
         .barcode-container svg {
-            width: 100%;
-            height: auto;
+            height: 30px;
+            width: auto;
+            max-width: 100%;
         }
     </style>
 </head>
 <body style="height: 100vh; box-sizing: border-box; display: flex; flex-direction: column; justify-content: flex-start;">
     <div class="container">
         <div class="left">${typeText || 'N/A'}</div>
-        <div class="spacer"></div>
-        <div class="center">
+        <div class="center-column">
             <div class="day-date">${formattedDate.dayAndDate}</div>
-            <div class="month">${formattedDate.month}</div>
+            <div class="month-container">${formattedDate.month}</div>
         </div>
-        <div class="spacer"></div>
         <div class="right">${data.panNum}</div>
     </div>
-    <div class="barcode-container">
-        ${barcodeSvg}
+    <div class="second-line">
+        <div class="barcode-container">
+            ${barcodeSvg}
+        </div>
     </div>
     <div style="flex-grow: 1;"></div>
     <div class="colour-container" style="padding-bottom: 10px;">
         ${colourText}
     </div>
-</body>
 </body>
 </html>
 `;
