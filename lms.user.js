@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LMS
 // @namespace    http://tampermonkey.net/
-// @version      1.34
+// @version      1.35
 // @description  Extracts and prints lab sheet information from 3Shape LMS
 // @author       You
 // @match        https://lms.3shape.com/ui/CaseRecord/*
@@ -889,7 +889,7 @@
         } else {
             formattedDate = {
                 dayAndDate: 'ERROR',
-                month: ''
+                month: 'ERROR'
             }
         }
 

@@ -69,6 +69,7 @@
     const handleLMSPage = async () => {
         try {
             const signInButton = await waitForElement('#sign-in-btn');
+            await new Promise(resolve => setTimeout(resolve, 2000));
             signInButton.click();
         } catch (error) {
             console.error('Failed to click sign in button:', error);
