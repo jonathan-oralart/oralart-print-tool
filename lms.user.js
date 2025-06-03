@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LMS
 // @namespace    http://tampermonkey.net/
-// @version      1.35
+// @version      1.36
 // @description  Extracts and prints lab sheet information from 3Shape LMS
 // @author       You
 // @match        https://lms.3shape.com/ui/CaseRecord/*
@@ -464,6 +464,8 @@
             }
 
             return {
+                patientFirstName: caseData.patientFirstName,
+                patientLastName: caseData.patientLastName,
                 patientName: `${caseData.patientLastName}, ${caseData.patientFirstName}`.trim(),
                 panNum: caseData.panNum,
                 barcode: caseData.barcode,
@@ -481,7 +483,6 @@
             };
         } catch (e) {
             console.error('Error in getData:', e);
-
             throw e;
         }
     };
@@ -1033,24 +1034,66 @@
         return apiKey;
     };
 
-    // Modify the printLabSheet function to handle downloads only
+
+    // Base function to download a single PDF
+    const downloadSinglePDF = (pdfResponse, data, type) => {
+        if (!pdfResponse) {
+            throw new Error(`${type} PDF not yet loaded`);
+        }
+        const formattedPatientName = `${data.patientFirstName} ${data.patientLastName}`.replace(/[^\w\s]/g, '');
+        const filename = `${data.panNum} ${formattedPatientName} LMS (${type}).pdf`;
+        downloadPDF(pdfResponse, filename);
+    };
+
+    // Base function to download label
+    const downloadLabel = (data) => {
+        if (!data || !cachedPDFs.label) {
+            throw new Error('Label PDF not yet loaded');
+        }
+        downloadSinglePDF(cachedPDFs.label, data, 'label');
+    };
+
+    // Base function to download work ticket
+    const downloadWorkTicket = (data) => {
+        if (!data || !cachedPDFs.workTicket) {
+            throw new Error('Work ticket PDF not yet loaded');
+        }
+        downloadSinglePDF(cachedPDFs.workTicket, data, 'work ticket');
+    };
+
+    // Function to download both PDFs
     const downloadPDFs = async () => {
         try {
-            if (!cachedData || !cachedPDFs.workTicket || !cachedPDFs.label) {
-                throw new Error('Data or PDFs not yet loaded');
+            if (!cachedData) {
+                throw new Error('Data not yet loaded');
             }
 
-            // Use patient name instead of pan number for filenames
-            const sanitizedPatientName = cachedData.patientName.replace(/[^\w\s]/g, '');
-            const workTicketFilename = `${sanitizedPatientName} LMS (work ticket).pdf`;
-            const labelFilename = `${sanitizedPatientName} LMS (label).pdf`;
-
-            downloadPDF(cachedPDFs.workTicket, workTicketFilename);
-            downloadPDF(cachedPDFs.label, labelFilename);
+            downloadWorkTicket(cachedData);
+            downloadLabel(cachedData);
 
         } catch (e) {
             console.error('Error in downloadPDFs:', e);
             showError('Failed to download PDFs: ' + e.message);
+        }
+    };
+
+    // Function to download label only
+    const downloadLabelOnly = async () => {
+        try {
+            downloadLabel(cachedData);
+        } catch (e) {
+            console.error('Error downloading label:', e);
+            showError('Failed to download label: ' + e.message);
+        }
+    };
+
+    // Function to download work ticket only
+    const downloadWorkTicketOnly = async () => {
+        try {
+            downloadWorkTicket(cachedData);
+        } catch (e) {
+            console.error('Error downloading work ticket:', e);
+            showError('Failed to download work ticket: ' + e.message);
         }
     };
 
@@ -1554,37 +1597,6 @@
 
             // Initialize for the new page
             initializeScript();
-        }
-    };
-
-    // Add new functions for individual PDF downloads
-    const downloadLabelOnly = async () => {
-        try {
-            if (!cachedData || !cachedPDFs.label) {
-                throw new Error('Label PDF not yet loaded');
-            }
-
-            const sanitizedPatientName = cachedData.patientName.replace(/[^\w\s]/g, '');
-            const labelFilename = `${sanitizedPatientName} LMS (label).pdf`;
-            downloadPDF(cachedPDFs.label, labelFilename);
-        } catch (e) {
-            console.error('Error downloading label:', e);
-            showError('Failed to download label: ' + e.message);
-        }
-    };
-
-    const downloadWorkTicketOnly = async () => {
-        try {
-            if (!cachedData || !cachedPDFs.workTicket) {
-                throw new Error('Work ticket PDF not yet loaded');
-            }
-
-            const sanitizedPatientName = cachedData.patientName.replace(/[^\w\s]/g, '');
-            const workTicketFilename = `${sanitizedPatientName} LMS (work ticket).pdf`;
-            downloadPDF(cachedPDFs.workTicket, workTicketFilename);
-        } catch (e) {
-            console.error('Error downloading work ticket:', e);
-            showError('Failed to download work ticket: ' + e.message);
         }
     };
 
