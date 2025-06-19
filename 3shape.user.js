@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         3Shape Print
 // @namespace    http://tampermonkey.net/
-// @version      0.6
+// @version      0.7
 // @description  Interact with blob content
 // @match        https://portal.3shapecommunicate.com/*
 // @icon         data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==
@@ -16,6 +16,32 @@
 
 (function () {
     'use strict';
+
+    const processedUrls = new Set();
+
+    // Watch for upload-additional-files div and auto-download files
+    const watchForUploadFiles = () => {
+        setInterval(() => {
+            const uploadDiv = document.querySelector('div.upload-additional-files');
+            if (uploadDiv) {
+                const currentUrl = window.location.href;
+                if (processedUrls.has(currentUrl)) {
+                    return; // Already processed this URL
+                }
+
+                console.log('Found upload-additional-files div, triggering downloads for url:', currentUrl);
+
+                // Click all download buttons
+                [...document.querySelectorAll("button[title='Download file']")].forEach(x => x.click());
+
+                // Mark this URL as processed
+                processedUrls.add(currentUrl);
+            }
+        }, 200);
+    };
+
+    // Start watching when the page loads
+    watchForUploadFiles();
 
     // Add storage handling for API key
     const getStoredApiKey = () => {
@@ -111,36 +137,29 @@
         URL.revokeObjectURL(url);
     };
 
-    // Function to extract patient name from HTML content
-    const extractPatientName = (htmlContent) => {
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(htmlContent, 'text/html');
+    // Function to download non-HTML files with renamed filename
+    const downloadFile = (blob, filename) => {
+        const url = originalCreateObjectURL(blob);
 
-        // Look for the table structure in the parsed document
-        const tables = doc.querySelectorAll('table.tableCaseDetails');
-        if (tables.length > 0) {
-            // Find the row containing "Patient name:"
-            const rows = tables[0].querySelectorAll('tr');
-            for (const row of rows) {
-                const cells = row.querySelectorAll('td');
-                for (let i = 0; i < cells.length; i++) {
-                    if (cells[i].textContent.trim() === 'Patient name:' && i + 1 < cells.length) {
-                        const patientName = cells[i + 1].textContent.trim();
-                        return patientName || 'Unknown_Patient';
-                    }
-                }
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
+
+    // Function to extract patient name from current page
+    const extractPatientName = () => {
+        try {
+            const patientNameElement = [...document.querySelectorAll("mat-expansion-panel mat-panel-title")][0];
+            if (patientNameElement && patientNameElement.innerText) {
+                return patientNameElement.innerText.trim() || 'Unknown_Patient';
             }
+        } catch (error) {
+            console.log('Error extracting patient name:', error);
         }
-
-        // Fallback: try a more generic approach if the table structure isn't found
-        const allCells = doc.querySelectorAll('td');
-        for (let i = 0; i < allCells.length; i++) {
-            if (allCells[i].textContent.trim() === 'Patient name:' && i + 1 < allCells.length) {
-                const patientName = allCells[i + 1].textContent.trim();
-                return patientName || 'Unknown_Patient';
-            }
-        }
-
         return 'Unknown_Patient';
     };
 
@@ -237,25 +256,26 @@
         return doc.documentElement.outerHTML;
     };
 
-    // Modify the blob interception to generate PDF
+    // Modify the blob interception to generate PDF and handle file downloads
     const originalCreateObjectURL = URL.createObjectURL;
     URL.createObjectURL = function (object) {
-        const blobUrl = originalCreateObjectURL(object);
-        console.log('Blob URL created:', blobUrl);
+        if (!(object instanceof Blob)) {
+            return originalCreateObjectURL(object);
+        }
 
-        if (object instanceof Blob) {
+        console.log('Blob intercepted:', object.type);
+
+        // Handle HTML files for PDF generation
+        if (object.type === 'text/html' || object.type === 'text/plain' || object.type === 'application/html') {
+            debugger;
             const reader = new FileReader();
             reader.onload = async function () {
                 const htmlContent = reader.result.toString();
                 if (htmlContent.startsWith('<!DOCTYPE public>')) {
                     try {
-                        // Extract patient name for the filename
-                        const patientName = extractPatientName(htmlContent);
+                        const patientName = extractPatientName();
                         const filename = `${patientName} 3Shape.pdf`;
-
-                        // Clean up the HTML content before generating PDF
                         const cleanedHtmlContent = cleanupHtmlContent(htmlContent);
-
                         const pdfResponse = await generatePDF(cleanedHtmlContent);
                         downloadPDF(pdfResponse, filename);
                     } catch (error) {
@@ -264,8 +284,37 @@
                 }
             };
             reader.readAsText(object);
+            return 'javascript:void(0);'; // Prevent original download
         }
 
-        return blobUrl;
+        // Handle all other files for direct download
+        let filename = 'unknown_file';
+        if (object.type) {
+            // Guess extension from MIME type (the part after '/'), with overrides for special cases
+            const subtypeToExt = {
+                'octet-stream': 'stl',
+                'sla': 'stl',
+                'x-ply': 'ply',
+                'plain': 'txt',
+                'jpeg': 'jpg',
+                'x-zip-compressed': 'zip'
+            };
+
+            let extension = 'bin';
+            const subtype = object.type.split('/')[1];
+            if (subtype) {
+                extension = subtypeToExt[subtype] || subtype;
+            }
+
+            filename = `file.${extension}`;
+        }
+
+        const patientName = extractPatientName();
+        const renamedFilename = `${patientName} 3Shape ${filename}`;
+
+        console.log(`Auto-downloading non-HTML file: ${filename} -> ${renamedFilename}`);
+        downloadFile(object, renamedFilename);
+
+        return 'javascript:void(0);'; // Prevent original download
     };
 })();
