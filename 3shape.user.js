@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         3Shape Print
 // @namespace    http://tampermonkey.net/
-// @version      0.7
+// @version      0.8
 // @description  Interact with blob content
 // @match        https://portal.3shapecommunicate.com/*
 // @icon         data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==
@@ -288,7 +288,7 @@
         }
 
         // Handle all other files for direct download
-        let filename = 'unknown_file';
+        let extension = 'bin';
         if (object.type) {
             // Guess extension from MIME type (the part after '/'), with overrides for special cases
             const subtypeToExt = {
@@ -300,19 +300,17 @@
                 'x-zip-compressed': 'zip'
             };
 
-            let extension = 'bin';
             const subtype = object.type.split('/')[1];
             if (subtype) {
                 extension = subtypeToExt[subtype] || subtype;
             }
 
-            filename = `file.${extension}`;
         }
 
         const patientName = extractPatientName();
-        const renamedFilename = `${patientName} 3Shape ${filename}`;
+        const renamedFilename = `${patientName} 3Shape.${extension}`;
 
-        console.log(`Auto-downloading non-HTML file: ${filename} -> ${renamedFilename}`);
+        console.log(`Auto-downloading non-HTML file: ${renamedFilename}`);
         downloadFile(object, renamedFilename);
 
         return 'javascript:void(0);'; // Prevent original download
