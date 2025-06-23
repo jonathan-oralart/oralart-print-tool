@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LMS
 // @namespace    http://tampermonkey.net/
-// @version      1.36
+// @version      1.37
 // @description  Extracts and prints lab sheet information from 3Shape LMS
 // @author       You
 // @match        https://lms.3shape.com/ui/CaseRecord/*
@@ -348,6 +348,14 @@
             return matches[1];
         }
         throw new Error('Could not find case ID in URL');
+    };
+
+    const getPanFromPage = () => {
+        const panElement = document.querySelector("span.case-record-pan-num span");
+        if (panElement) {
+            return panElement.innerText.trim();
+        }
+        return null;
     };
 
     // Add this new function for fetching client data and extracting courier info
@@ -920,7 +928,7 @@
             display: flex;
             width: 100%;
             align-items: start;
-            font-size: 28px;
+            font-size: 26px;
             margin-bottom: 5px;
         }
         .left { 
@@ -1068,6 +1076,13 @@
                 throw new Error('Data not yet loaded');
             }
 
+            const pagePan = getPanFromPage();
+            if (pagePan && cachedData.panNum !== pagePan) {
+                showError(`PAN mismatch! Page: ${pagePan}, Data: ${cachedData.panNum}. Refreshing data...`);
+                prefetchData();
+                return;
+            }
+
             downloadWorkTicket(cachedData);
             downloadLabel(cachedData);
 
@@ -1080,6 +1095,12 @@
     // Function to download label only
     const downloadLabelOnly = async () => {
         try {
+            const pagePan = getPanFromPage();
+            if (pagePan && cachedData.panNum !== pagePan) {
+                showError(`PAN mismatch! Page: ${pagePan}, Data: ${cachedData.panNum}. Refreshing data...`);
+                prefetchData();
+                return;
+            }
             downloadLabel(cachedData);
         } catch (e) {
             console.error('Error downloading label:', e);
@@ -1090,6 +1111,12 @@
     // Function to download work ticket only
     const downloadWorkTicketOnly = async () => {
         try {
+            const pagePan = getPanFromPage();
+            if (pagePan && cachedData.panNum !== pagePan) {
+                showError(`PAN mismatch! Page: ${pagePan}, Data: ${cachedData.panNum}. Refreshing data...`);
+                prefetchData();
+                return;
+            }
             downloadWorkTicket(cachedData);
         } catch (e) {
             console.error('Error downloading work ticket:', e);
@@ -1102,6 +1129,13 @@
         try {
             if (!cachedData) {
                 throw new Error('Data not yet loaded');
+            }
+
+            const pagePan = getPanFromPage();
+            if (pagePan && cachedData.panNum !== pagePan) {
+                showError(`PAN mismatch! Page: ${pagePan}, Data: ${cachedData.panNum}. Refreshing data...`);
+                prefetchData();
+                return;
             }
 
             // Set generating flag
@@ -1262,22 +1296,43 @@
         });
     };
 
-    const showError = (message) => {
-        const errorDiv = document.createElement('div');
-        errorDiv.style.cssText = `
+    const createErrorContainer = () => {
+        const container = document.createElement('div');
+        container.id = 'lms-error-container';
+        container.style.cssText = `
             position: fixed;
             top: 20px;
             left: 50%;
             transform: translateX(-50%);
+            z-index: 10001;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        `;
+        document.body.appendChild(container);
+        return container;
+    };
+
+    const showError = (message) => {
+        const errorContainer = document.getElementById('lms-error-container') || createErrorContainer();
+
+        const errorDiv = document.createElement('div');
+        errorDiv.style.cssText = `
             background: #ff4444;
             color: white;
             padding: 10px 20px;
             border-radius: 4px;
-            z-index: 10001;
+            margin-bottom: 10px;
+            opacity: 1;
+            transition: opacity 0.5s ease;
         `;
         errorDiv.textContent = message;
-        document.body.appendChild(errorDiv);
-        setTimeout(() => errorDiv.remove(), 5000);
+        errorContainer.appendChild(errorDiv);
+
+        setTimeout(() => {
+            errorDiv.style.opacity = '0';
+            setTimeout(() => errorDiv.remove(), 500);
+        }, 5000);
     };
 
     // Add keyboard shortcut handler
@@ -1607,6 +1662,13 @@
                 throw new Error('Data not yet loaded');
             }
 
+            const pagePan = getPanFromPage();
+            if (pagePan && cachedData.panNum !== pagePan) {
+                showError(`PAN mismatch! Page: ${pagePan}, Data: ${cachedData.panNum}. Refreshing data...`);
+                prefetchData();
+                return;
+            }
+
             // Set generating flag
             cachedPDFs.isGenerating = true;
             updateButtonState();
@@ -1642,6 +1704,13 @@
         try {
             if (!cachedData) {
                 throw new Error('Data not yet loaded');
+            }
+
+            const pagePan = getPanFromPage();
+            if (pagePan && cachedData.panNum !== pagePan) {
+                showError(`PAN mismatch! Page: ${pagePan}, Data: ${cachedData.panNum}. Refreshing data...`);
+                prefetchData();
+                return;
             }
 
             // Set generating flag
