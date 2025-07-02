@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LMS
 // @namespace    http://tampermonkey.net/
-// @version      1.37
+// @version      1.38
 // @description  Extracts and prints lab sheet information from 3Shape LMS
 // @author       You
 // @match        https://lms.3shape.com/ui/CaseRecord/*
@@ -44,6 +44,16 @@
         const viewWorkTicketButton = document.getElementById('view-work-ticket-button');
         const generateLabelButton = document.getElementById('generate-label-button');
         const generateWorkTicketButton = document.getElementById('generate-work-ticket-button');
+
+        console.log('updateButtonState - Username:', username, 'Is Jonathan:', isJonathan);
+        console.log('Buttons found:', {
+            button: !!button,
+            refreshButton: !!refreshButton,
+            viewLabelsButton: !!viewLabelsButton,
+            viewWorkTicketButton: !!viewWorkTicketButton,
+            generateLabelButton: !!generateLabelButton,
+            generateWorkTicketButton: !!generateWorkTicketButton
+        });
 
         if (!button || !refreshButton) return;
 
@@ -156,6 +166,7 @@
     function addPrintButton() {
         const username = GM_getValue('username', '');
         const isJonathan = username.toLowerCase() === 'jonathan';
+        console.log('addPrintButton - Username:', username, 'Is Jonathan:', isJonathan);
 
         // Create a flex container for all buttons
         const buttonContainer = document.createElement('div');
@@ -202,6 +213,7 @@
         `;
 
         if (isJonathan) {
+            console.log('Creating view buttons for Jonathan');
             // Create view buttons
             const viewWorkTicketButton = document.createElement('button');
             viewWorkTicketButton.id = 'view-work-ticket-button';
@@ -224,7 +236,9 @@
             buttonContainer.appendChild(viewLabelsButton);
             buttonContainer.appendChild(viewWorkTicketButton);
             buttonContainer.appendChild(refreshButton);
+            console.log('View buttons created and added to container');
         } else {
+            console.log('Creating generate buttons for non-Jonathan user');
             // Create generate buttons
             const generateWorkTicketButton = document.createElement('button');
             generateWorkTicketButton.id = 'generate-work-ticket-button';
@@ -247,6 +261,7 @@
             buttonContainer.appendChild(generateLabelButton);
             buttonContainer.appendChild(generateWorkTicketButton);
             buttonContainer.appendChild(refreshButton);
+            console.log('Generate buttons created and added to container');
         }
 
         // Create auto-download checkbox container
@@ -533,7 +548,7 @@
         const tempSvg = document.createElement('svg');
         JsBarcode(tempSvg, data.barcode, {
             format: "CODE128",
-            width: 2,
+            width: 1.5,
             height: 25,
             displayValue: false
         });
@@ -547,16 +562,35 @@
     <style>
         body { 
             font-family: Arial, sans-serif;
-            max-width: 400px;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        
+        .page-container {
+            width: 100%;
+            max-width: 1123px; /* A4 landscape width minus margins */
+            height: 774px; /* A4 landscape height minus margins */
             margin: 0 auto;
+            overflow: visible;
         }
-        .header-container {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            align-items: start;
-            position: relative;
+        
+        .header-section-top {
+            margin-bottom: 20px;
         }
+        
+        .content-columns {
+            column-count: 3;
+            column-gap: 20px;
+            column-fill: auto;
+            height: 100%;
+        }
+        
+        .content-section {
+            break-inside: avoid;
+            margin-bottom: 20px;
+        }
+        
         .header-section {
             text-align: left;
         }
@@ -593,8 +627,10 @@
             color: #fff;
             padding: 8px;
             text-align: center;
-            width: 115px;
+            width: 94px;
             z-index: 1;
+            float: right;
+            margin-left: 10px;
         }
         .due-date-day {
             font-size: 54px;
@@ -633,7 +669,7 @@
             text-align: left;
             font-weight: bold;
             border-top: none;
-            font-size: min(100cqw, 14px);
+            font-size: 14px;
             white-space: nowrap;
         }
         .details-table td {
@@ -655,10 +691,24 @@
             vertical-align: top;
             line-height: 1;
         }
+        
         @media print {
-            @page { margin: 0.5cm; }
-            body { print-color-adjust: exact; }
+            @page { 
+                margin: 0.5cm;
+                size: A4 landscape;
+            }
+            body { 
+                print-color-adjust: exact;
+                margin: 0;
+                padding: 10px;
+            }
+            .page-container {
+                max-width: none;
+                width: 100%;
+                min-height: auto;
+            }
         }
+        
         .comments-box {
             margin-bottom: 20px;
         }
@@ -699,7 +749,11 @@
             margin-bottom: 10px;
         }
         .production-schedule h3 {
-            display: none;
+            margin-bottom: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            padding-bottom: 5px;
+            border-bottom: 2px solid #000;
         }
         .schedule-table thead tr th {
             border-bottom: 2px solid #000;
@@ -708,104 +762,135 @@
         .schedule-table td:first-child {
             font-weight: bold;
         }
+        
+        .doctor-patient-info {
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+        
+        .doctor-info {
+            float: left;
+            width: calc(100% - 125px);
+        }
+        
+        .patient-info {
+            clear: both;
+            margin-bottom: 10px;
+        }
+        
+        .phone-info {
+            margin-bottom: 10px;
+        }
+        
+        .total-units {
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
-    <div class="header-container">
-        <div class="header-section">
-            <div class="company-name">${data.clientInfo}</div>
-            ${barcodeSvg}
-        </div>
-        <div class="header-section center">
-            <div class="courier-text">${data.courierInfo || 'No Courier Specified'}</div>
-            <div class="barcode-number">${data.barcode}</div>
-        </div>
-        <div class="header-section right">
-            <div class="pan-container">
-                <div class="pan-label">Pan #</div>
-                <div class="pan-number">${data.panNum}</div>
+    <div class="page-container">
+        <!-- Content flows in newspaper columns -->
+        <div class="content-columns">
+            <div class="content-section header-section-top">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div>
+                        <div class="company-name">${data.clientInfo}</div>
+                        ${barcodeSvg}
+                    </div>
+                    
+                    <div>
+                        <div class="courier-text">${data.courierInfo || 'No Courier Specified'}</div>
+                        <div class="barcode-number">${data.barcode}</div>
+                    </div>
+                    
+                    <div>
+                        <div class="pan-label">Pan #</div>
+                        <div class="pan-number">${data.panNum}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content-section doctor-patient-info">
+                <div class="due-date-box">
+                    <div class="due-date-day">${dueDateTime.day}</div>
+                    <div class="due-date-rest">${dueDateTime.rest}</div>
+                </div>
+                
+                <div class="doctor-info">
+                    <div class="info-label">Doctor</div>
+                    <div class="info-value">${data.doctorName}</div>
+                </div>
+            </div>
+
+            <div class="content-section patient-info">
+                <div class="info-label">Patient</div>
+                <div class="info-value">
+                    <div class="patient-name">${data.patientName}</div>
+                    ${data.remakeStatus ? `<div class="remake-status">${data.remakeStatus}</div>` : ''}
+                </div>
+            </div>
+
+            <div class="content-section phone-info">
+                <div class="phone-label">Phone</div>
+                <div class="phone-value">${data.phone}</div>
+            </div>
+
+            <div class="content-section total-units">Total Units: ${data.caseItems.length}</div>
+
+            <div class="content-section">
+                <table class="details-table">
+                    <thead>
+                        <tr>
+                            <th>Tooth #</th>
+                            <th>Description</th>
+                            <th>Shade</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${data.caseItems.map(item => `
+                            <tr>
+                                <td>${item.toothNum}</td>
+                                <td>${item.item}</td>
+                                <td>${item.shade}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="content-section comments-box">
+                <h3>Comments</h3>
+                <div class="comments-content">${data.comments}</div>
+            </div>
+
+            <div class="content-section doctor-preferences">
+                <h3>Doctor Preferences</h3>
+                <div>
+                    ${data.doctorPreferences.map(pref => `<div>${pref}</div>`).join('')}
+                </div>
+            </div>
+
+            <div class="content-section production-schedule">
+                <h3>Production Schedule</h3>
+                <table class="schedule-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 80px">Deadline</th>
+                            <th>Step</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${data.productionLog.map(log => `
+                            <tr>
+                                <td>${formatDate(log.date)}</td>
+                                <td>${log.step}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
             </div>
         </div>
-    </div>
-
-    <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-        <div class="info-section" style="flex: 1; margin-right: 10px;">
-            <div class="info-label">Doctor</div>
-            <div class="info-value">${data.doctorName}</div>
-        </div>
-        
-        <div class="right-info-container">
-            <div class="due-date-box">
-                <div class="due-date-day">${dueDateTime.day}</div>
-                <div class="due-date-rest">${dueDateTime.rest}</div>
-            </div>
-        </div>
-    </div>
-
-    <div class="info-section" style="margin-bottom: 10px;">
-        <div class="info-label">Patient</div>
-        <div class="info-value">
-            <div class="patient-name">${data.patientName}</div>
-            ${data.remakeStatus ? `<div class="remake-status">${data.remakeStatus}</div>` : ''}
-        </div>
-    </div>
-
-    <div class="info-section" style="margin-bottom: 10px;">
-        <div class="phone-label">Phone</div>
-        <div class="phone-value">${data.phone}</div>
-    </div>
-
-    <div>Total Units: ${data.caseItems.length}</div>
-
-    <table class="details-table">
-        <thead>
-            <tr>
-                <th>Tooth #</th>
-                <th>Description</th>
-                <th>Shade</th>
-            </tr>
-        </thead>
-        <tbody>
-            ${data.caseItems.map(item => `
-                <tr>
-                    <td>${item.toothNum}</td>
-                    <td>${item.item}</td>
-                    <td>${item.shade}</td>
-                </tr>
-            `).join('')}
-        </tbody>
-    </table>
-
-    <div class="comments-box">
-        <h3>Comments</h3>
-        <div class="comments-content">${data.comments}</div>
-    </div>
-
-    <div class="doctor-preferences">
-        <h3>Doctor Preferences</h3>
-        <div>
-            ${data.doctorPreferences.map(pref => `<div>${pref}</div>`).join('')}
-        </div>
-    </div>
-
-    <div class="production-schedule">
-        <h3>Production Schedule</h3>
-        <table class="schedule-table">
-            <thead>
-                <tr>
-                    <th style="width: 80px">Deadline</th>
-                    <th>Step</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${data.productionLog.map(log => `
-                    <tr>
-                        <td>${formatDate(log.date)}</td>
-                        <td>${log.step}</td>
-                    </tr>
-                `).join('')}
-            </tbody>
-        </table>
     </div>
 </body>
 </html>
@@ -1152,8 +1237,8 @@
                 console.log('Generating PDFs...');
                 [cachedPDFs.workTicket, cachedPDFs.label] = await Promise.all([
                     generatePDF(workTicketHTML, {
-                        width: '112mm',
-                        height: '297mm'
+                        width: '297mm',
+                        height: '210mm'
                     }),
                     generatePDF(labelHTML, {
                         width: '100mm',
@@ -1241,8 +1326,8 @@
 
     // Modified generatePDF function to accept custom dimensions
     const generatePDF = async (htmlContent, dimensions = {
-        width: '112mm',
-        height: '297mm'
+        width: '297mm',
+        height: '210mm'
     }) => {
         // UTF-8 safe base64 encoding
         const utf8ToBase64 = (str) => {
@@ -1342,6 +1427,17 @@
             e.preventDefault(); // Prevent default print dialog
             printLabSheet();
         }
+        // Add Control/Command + U to reset username
+        if ((e.ctrlKey || e.metaKey) && e.key === 'u') {
+            e.preventDefault();
+            const newUsername = prompt('Enter your username:', GM_getValue('username', ''));
+            if (newUsername !== null) {
+                GM_setValue('username', newUsername.trim());
+                console.log('Username updated to:', newUsername.trim());
+                // Reload the page to reinitialize with new username
+                location.reload();
+            }
+        }
     };
 
     // Add a new function to view labels in a new tab
@@ -1386,9 +1482,12 @@
         if (!username) {
             username = prompt('Please enter your username:');
             if (username) {
+                // Trim whitespace and store
+                username = username.trim();
                 GM_setValue('username', username);
             }
         }
+        console.log('Current username:', username, 'Is Jonathan:', username.toLowerCase() === 'jonathan');
         return username;
     };
 
@@ -1398,6 +1497,10 @@
     // Modify the initializeScript function
     const initializeScript = () => {
         console.log("Initializing LMS script");
+
+        // Log current stored username for debugging
+        const storedUsername = GM_getValue('username', '');
+        console.log("Stored username on initialization:", storedUsername);
 
         // Get the current case ID from URL if possible
         const currentCaseId = window.location.pathname.match(/\/ui\/CaseRecord\/(\d+)/i)?.[1];
@@ -1722,8 +1825,8 @@
 
             console.log('Generating work ticket PDF...');
             cachedPDFs.workTicket = await generatePDF(workTicketHTML, {
-                width: '112mm',
-                height: '297mm'
+                width: '297mm',
+                height: '210mm'
             });
 
             console.log('Work ticket PDF generated and cached');
