@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LMS
 // @namespace    http://tampermonkey.net/
-// @version      1.39
+// @version      1.40
 // @description  Extracts and prints lab sheet information from 3Shape LMS
 // @author       You
 // @match        https://lms.3shape.com/ui/CaseRecord/*
@@ -570,7 +570,7 @@
         .page-container {
             width: 100%;
             max-width: 1123px; /* A4 landscape width minus margins */
-            height: 750px; /* A4 landscape height minus margins */
+            height: 735px; /* A4 landscape height minus margins */
             margin: 0 auto;
             overflow: visible;
         }
