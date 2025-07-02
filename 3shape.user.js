@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         3Shape Print
 // @namespace    http://tampermonkey.net/
-// @version      0.8
+// @version      0.9
 // @description  Interact with blob content
 // @match        https://portal.3shapecommunicate.com/*
 // @icon         data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==
@@ -59,8 +59,8 @@
 
     // Add PDF generation function
     const generatePDF = async (htmlContent, dimensions = {
-        width: '112mm',
-        height: '297mm'
+        height: '297mm',
+        width: '210mm'
     }) => {
         // Remove image tags from HTML content
         const tempDiv = document.createElement('div');

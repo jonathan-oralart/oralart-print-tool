@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Print Gmail Narrow
 // @namespace    http://tampermonkey.net/
-// @version      1.2
+// @version      1.3
 // @description  Print Gmail Narrow
 // @author       Jonathan de Wet
 // @match        https://mail.google.com/mail/b/*
@@ -146,8 +146,8 @@
     };
 
     const generatePDF = async (htmlContent, dimensions = {
-        width: '112mm',
-        height: '297mm'
+        height: '297mm',
+        width: '210mm'
     }) => {
         // Use this helper function to handle UTF-8 encoding
         const utf8_to_b64 = (str) => {

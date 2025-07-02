@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Meddit 2
 // @namespace    http://tampermonkey.net/
-// @version      0.3
+// @version      0.4
 // @description  try to take over the world!
 // @author       You
 // @match        https://www.meditlink.com/inbox/*
@@ -35,8 +35,8 @@
 
     // Add PDF generation function
     const generatePDF = async (htmlContent, dimensions = {
-        width: '112mm',
-        height: '297mm'
+        height: '297mm',
+        width: '210mm'
     }) => {
         const utf8_to_b64 = (str) => {
             return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g,

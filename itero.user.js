@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Itero Print
 // @namespace    http://tampermonkey.net/
-// @version      0.5
+// @version      0.6
 // @description  Interact with blob content
 // @match        https://bff.cloud.myitero.com/*
 // @icon         data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==
@@ -230,8 +230,8 @@
     };
 
     const generatePDF = async (htmlContent, dimensions = {
-        width: '112mm',
-        height: '297mm'
+        width: '297mm',
+        height: '210mm'
     }) => {
         const utf8_to_b64 = (str) => {
             return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g,
