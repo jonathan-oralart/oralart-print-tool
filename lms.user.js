@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LMS
 // @namespace    http://tampermonkey.net/
-// @version      1.41
+// @version      1.42
 // @description  Extracts and prints lab sheet information from 3Shape LMS
 // @author       You
 // @match        https://lms.3shape.com/ui/CaseRecord/*
@@ -793,7 +793,7 @@
         <!-- Content flows in newspaper columns -->
         <div class="content-columns">
             <div class="content-section header-section-top">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-right: 10px">
                     <div>
                         <div class="company-name">${data.clientInfo}</div>
                         ${barcodeSvg}
