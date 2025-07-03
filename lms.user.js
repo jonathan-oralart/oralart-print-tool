@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LMS
 // @namespace    http://tampermonkey.net/
-// @version      1.40
+// @version      1.41
 // @description  Extracts and prints lab sheet information from 3Shape LMS
 // @author       You
 // @match        https://lms.3shape.com/ui/CaseRecord/*
@@ -548,7 +548,7 @@
         const tempSvg = document.createElement('svg');
         JsBarcode(tempSvg, data.barcode, {
             format: "CODE128",
-            width: 1.5,
+            width: 1,
             height: 25,
             displayValue: false
         });
@@ -612,14 +612,14 @@
         }
         .barcode-number {
             font-weight: bold;
-            font-size: 26px;
+            font-size: 24px;
         }
         .pan-container {
             display: flex;
             flex-direction: column;
         }
         .pan-number {
-            font-size: 26px;
+            font-size: 24px;
             font-weight: bold;
         }
         .due-date-box {
@@ -647,7 +647,7 @@
             color: #666;
         }
         .info-value {
-            font-size: 32px;
+            font-size: 30px;
             font-weight: bold;
             margin-bottom: 10px;
             display: flex;
