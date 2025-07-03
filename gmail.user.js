@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Print Gmail Narrow
 // @namespace    http://tampermonkey.net/
-// @version      1.3
+// @version      1.4
 // @description  Print Gmail Narrow
 // @author       Jonathan de Wet
 // @match        https://mail.google.com/mail/b/*
