@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LMS
 // @namespace    http://tampermonkey.net/
-// @version      1.42
+// @version      1.43
 // @description  Extracts and prints lab sheet information from 3Shape LMS
 // @author       You
 // @match        https://lms.3shape.com/ui/CaseRecord/*
@@ -562,15 +562,11 @@
     <style>
         body { 
             font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
             box-sizing: border-box;
         }
         
         .page-container {
             width: 100%;
-            max-width: 1123px; /* A4 landscape width minus margins */
-            height: 735px; /* A4 landscape height minus margins */
             margin: 0 auto;
             overflow: visible;
         }
@@ -692,21 +688,19 @@
             line-height: 1;
         }
         
-        @media print {
-            @page { 
-                margin: 0.5cm;
-                size: A4 landscape;
-            }
-            body { 
-                print-color-adjust: exact;
-                margin: 0;
-                padding: 10px;
-            }
-            .page-container {
-                max-width: none;
-                width: 100%;
-                min-height: auto;
-            }
+        @page { 
+            margin: 0.5cm;
+            size: A4 landscape;
+        }
+        body { 
+            print-color-adjust: exact;
+            margin: 0;
+            padding: 10px;
+        }
+        .page-container {
+            max-width: none;
+            width: 100%;
+            min-height: auto;
         }
         
         .comments-box {
@@ -804,7 +798,7 @@
                         <div class="barcode-number">${data.barcode}</div>
                     </div>
                     
-                    <div>
+                    <div style="margin-left: 10px;">
                         <div class="pan-label">Pan #</div>
                         <div class="pan-number">${data.panNum}</div>
                     </div>
