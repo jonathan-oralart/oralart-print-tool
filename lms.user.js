@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LMS
 // @namespace    http://tampermonkey.net/
-// @version      1.44
+// @version      1.45
 // @description  Extracts and prints lab sheet information from 3Shape LMS
 // @author       You
 // @match        https://lms.3shape.com/ui/CaseRecord/*
@@ -451,7 +451,7 @@
             const caseItems = itemsData.data.map(item => {
                 // Try original item name first, if not found try without " (inc. models)"
                 const lookupItem = productLookup[item.Item] ||
-                    productLookup[item.Item.replace(" (inc. models)", "")] ||
+                    productLookup[item.Item.replace(/\s*\(inc\. models?\)\s*/g, "")] ||
                     {};
 
                 return {
