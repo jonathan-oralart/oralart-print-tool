@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LMS
 // @namespace    http://tampermonkey.net/
-// @version      1.45
+// @version      1.46
 // @description  Extracts and prints lab sheet information from 3Shape LMS
 // @author       You
 // @match        https://lms.3shape.com/ui/CaseRecord/*
@@ -280,7 +280,7 @@
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
         checkbox.id = 'auto-download-checkbox';
-        checkbox.checked = GM_getValue('auto-download', true);
+        checkbox.checked = GM_getValue('auto-download', false);
         checkbox.style.marginRight = '5px';
 
         checkbox.addEventListener('change', function () {
@@ -1290,7 +1290,7 @@
             console.log("Data prefetched successfully", cachedData);
 
             // Only auto-download if checkbox is checked
-            const autoDownload = GM_getValue('auto-download', true);
+            const autoDownload = GM_getValue('auto-download', false);
             if (autoDownload) {
                 generatePDFs();
             }
