@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LMS
 // @namespace    http://tampermonkey.net/
-// @version      1.46
+// @version      1.47
 // @description  Extracts and prints lab sheet information from 3Shape LMS
 // @author       You
 // @match        https://lms.3shape.com/ui/CaseRecord/*
@@ -1074,8 +1074,9 @@
         </div>
     </div>
     <div style="flex-grow: 1;"></div>
-    <div class="colour-container" style="padding-bottom: 10px;">
-        ${colourText}
+    <div class="colour-container" style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 10px;">
+        <span>${colourText}</span>
+        <span>${data.patientName}</span>
     </div>
 </body>
 </html>
