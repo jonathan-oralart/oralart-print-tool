@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         3Shape Print
 // @namespace    http://tampermonkey.net/
-// @version      0.9
+// @version      0.10
 // @description  Interact with blob content
 // @match        https://portal.3shapecommunicate.com/*
 // @icon         data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==
@@ -163,8 +163,46 @@
         return 'Unknown_Patient';
     };
 
+    // Function to extract collaborator data
+    const extractCollaboratorData = async () => {
+        try {
+            // First, try to find the collaborator element
+            let collaboratorElement = Array.from(document.querySelectorAll('div.title')).find(el => el.textContent.includes('Collaborator(s):'));
+
+            if (!collaboratorElement) {
+                // If not found, click the expansion button and wait
+                const expansionButton = document.querySelector("[class*='mat-expansion-indicator']")
+                if (expansionButton) {
+                    expansionButton.click();
+
+                    // Wait 500ms
+                    await new Promise(resolve => setTimeout(resolve, 500));
+
+                    // Try to find the collaborator element again
+                    collaboratorElement = Array.from(document.querySelectorAll('div.title')).find(el => el.textContent.includes('Collaborator(s):'));
+                }
+            }
+
+            if (collaboratorElement && collaboratorElement.parentElement && collaboratorElement.parentElement.children[1]) {
+                const rawCollaboratorText = collaboratorElement.parentElement.children[1].innerText;
+
+                // Process the collaborator text: split by comma, filter out admin email, remove parentheses content
+                const processedCollaborator = rawCollaboratorText
+                    .split(",")
+                    .filter(x => !x.includes("admin@oralart.co.nz"))[0]
+                    ?.replace(/\(.*\)\s*/, "")
+                    ?.trim();
+
+                return processedCollaborator || '';
+            }
+        } catch (error) {
+            console.log('Error extracting collaborator data:', error);
+        }
+        return '';
+    };
+
     // Function to clean up HTML content to match desired format
-    const cleanupHtmlContent = (htmlContent) => {
+    const cleanupHtmlContent = (htmlContent, collaboratorData = '') => {
         const parser = new DOMParser();
         const doc = parser.parseFromString(htmlContent, 'text/html');
 
@@ -215,6 +253,19 @@
                     }
                 }
             });
+
+            // Add collaborator data as a new row if available
+            if (collaboratorData) {
+                const tbody = caseDetailsTable.querySelector('tbody');
+                if (tbody) {
+                    const collaboratorRow = document.createElement('tr');
+                    collaboratorRow.innerHTML = `
+                        <td class="label">Collaborator:</td>
+                        <td class="underline">${collaboratorData}</td>
+                    `;
+                    tbody.appendChild(collaboratorRow);
+                }
+            }
         }
 
         // Remove GMT timezone information from dates
@@ -267,15 +318,15 @@
 
         // Handle HTML files for PDF generation
         if (object.type === 'text/html' || object.type === 'text/plain' || object.type === 'application/html') {
-            debugger;
             const reader = new FileReader();
             reader.onload = async function () {
                 const htmlContent = reader.result.toString();
                 if (htmlContent.startsWith('<!DOCTYPE public>')) {
                     try {
                         const patientName = extractPatientName();
+                        const collaboratorData = await extractCollaboratorData();
                         const filename = `${patientName} 3Shape.pdf`;
-                        const cleanedHtmlContent = cleanupHtmlContent(htmlContent);
+                        const cleanedHtmlContent = cleanupHtmlContent(htmlContent, collaboratorData);
                         const pdfResponse = await generatePDF(cleanedHtmlContent);
                         downloadPDF(pdfResponse, filename);
                     } catch (error) {
