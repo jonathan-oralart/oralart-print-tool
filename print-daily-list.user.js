@@ -1,10 +1,10 @@
 // ==UserScript==
-// @name         Custom Print Handler
+// @name         Daily Roundup Print
 // @namespace    http://tampermonkey.net/
-// @version      1.0
+// @version      1.1
 // @description  Custom print functionality with Cmd+P
 // @author       You
-// @match        https://oralart.retool.com/apps/f4903bfa-cad4-11ee-9076-8301327d0c43/Daily%20Roundup%20*
+// @match        https://oralart.retool.com/apps/*
 // @grant        none
 // ==/UserScript==
 
@@ -40,12 +40,19 @@
                 }
             }
 
+            // Get the page title from dateText element
+            var pageTitle = 'Print';
+            var dateElement = document.querySelector('[data-testid="dateText--0"]');
+            if (dateElement && dateElement.innerText) {
+                pageTitle = dateElement.innerText.trim();
+            }
+
             // Write the content to the new window
             printWindow.document.write(`
                 <!DOCTYPE html>
                 <html>
                 <head>
-                    <title>Print</title>
+                    <title>${pageTitle}</title>
                     ${styles}
                     <style>
                         @media print {
