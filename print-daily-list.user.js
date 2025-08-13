@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Daily Roundup Print
 // @namespace    http://tampermonkey.net/
-// @version      1.1
+// @version      1.2
 // @description  Custom print functionality with Cmd+P
 // @author       You
 // @match        https://oralart.retool.com/apps/*
@@ -74,7 +74,7 @@
             setTimeout(function () {
                 printWindow.focus();
                 printWindow.print();
-                printWindow.close();
+                // printWindow.close();
             }, 500);
 
         } catch (error) {
