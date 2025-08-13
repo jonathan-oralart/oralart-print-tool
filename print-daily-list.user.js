@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Daily Roundup Print
 // @namespace    http://tampermonkey.net/
-// @version      1.2
+// @version      1.3
 // @description  Custom print functionality with Cmd+P
 // @author       You
 // @match        https://oralart.retool.com/apps/*
@@ -21,64 +21,65 @@
                 return;
             }
 
-            // Create a new window for printing
-            var printWindow = window.open('', '_blank');
+            // Get the root element
+            var rootElement = document.getElementById('root');
+            if (!rootElement) {
+                console.error('Root element not found, falling back to normal print');
+                window.print();
+                return;
+            }
 
-            // Get all stylesheets from the current page
-            var styles = '';
-            for (var i = 0; i < document.styleSheets.length; i++) {
-                try {
-                    var styleSheet = document.styleSheets[i];
-                    if (styleSheet.href) {
-                        styles += '<link rel="stylesheet" href="' + styleSheet.href + '">';
-                    } else if (styleSheet.ownerNode) {
-                        styles += '<style>' + styleSheet.ownerNode.innerHTML + '</style>';
+            // Hide the root element
+            rootElement.style.display = 'none';
+
+            // Create a temporary div for printing
+            var printDiv = document.createElement('div');
+            printDiv.id = 'temp-print-content';
+
+            // Clone the print contents to avoid modifying the original
+            var clonedContents = printContents.cloneNode(true);
+            printDiv.appendChild(clonedContents);
+
+            // Add print-specific styles to the temporary div
+            printDiv.innerHTML = `
+                <style>
+                    @media print {
+                        body { margin: 0; padding: 20px; }
+                        * { -webkit-print-color-adjust: exact !important; color-adjust: exact !important; }
+                        [data-testid="TableWrapper::ScrollableContainer"] { max-height: unset !important; overflow: visible !important; }
+                        #temp-print-content { display: block !important; }
                     }
-                } catch (e) {
-                    // Skip stylesheets that can't be accessed (CORS)
-                    console.warn('Could not access stylesheet:', e);
-                }
-            }
+                    @media screen {
+                        #temp-print-content { display: none; }
+                    }
+                </style>
+            ` + printDiv.innerHTML;
 
-            // Get the page title from dateText element
-            var pageTitle = 'Print';
-            var dateElement = document.querySelector('[data-testid="dateText--0"]');
-            if (dateElement && dateElement.innerText) {
-                pageTitle = dateElement.innerText.trim();
-            }
+            // Add the temporary div to the body
+            document.body.appendChild(printDiv);
 
-            // Write the content to the new window
-            printWindow.document.write(`
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <title>${pageTitle}</title>
-                    ${styles}
-                    <style>
-                        @media print {
-                            body { margin: 0; padding: 20px; }
-                            * { -webkit-print-color-adjust: exact !important; color-adjust: exact !important; }
-                            [data-testid="TableWrapper::ScrollableContainer"] { max-height: unset !important; overflow: visible !important; }
-                        }
-                    </style>
-                </head>
-                <body>
-                    ${printContents.outerHTML}
-                </body>
-                </html>
-            `);
+            // Print the page
+            window.print();
 
-            printWindow.document.close();
-
-            // Wait for styles to load, then print and close
+            // Clean up: remove the temporary div and restore the root element
             setTimeout(function () {
-                printWindow.focus();
-                printWindow.print();
-                printWindow.close();
-            }, 500);
+                document.body.removeChild(printDiv);
+                rootElement.style.display = '';
+            }, 100);
 
         } catch (error) {
             console.error('Error in custom print function:', error);
+
+            // Clean up in case of error
+            var tempDiv = document.getElementById('temp-print-content');
+            if (tempDiv) {
+                document.body.removeChild(tempDiv);
+            }
+            var rootElement = document.getElementById('root');
+            if (rootElement) {
+                rootElement.style.display = '';
+            }
+
             // Fallback to normal print if something goes wrong
             window.print();
         }
