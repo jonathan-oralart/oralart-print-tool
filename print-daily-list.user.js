@@ -58,7 +58,7 @@
                         @media print {
                             body { margin: 0; padding: 20px; }
                             * { -webkit-print-color-adjust: exact !important; color-adjust: exact !important; }
-                            [data-testid="TableWrapper::ScrollableContainer"] { max-height: unset !important; }
+                            [data-testid="TableWrapper::ScrollableContainer"] { max-height: unset !important; overflow: visible !important; }
                         }
                     </style>
                 </head>
@@ -74,7 +74,7 @@
             setTimeout(function () {
                 printWindow.focus();
                 printWindow.print();
-                // printWindow.close();
+                printWindow.close();
             }, 500);
 
         } catch (error) {
