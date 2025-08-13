@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Daily Roundup Print
 // @namespace    http://tampermonkey.net/
-// @version      1.3
+// @version      1.4
 // @description  Custom print functionality with Cmd+P
 // @author       You
 // @match        https://oralart.retool.com/apps/*
@@ -32,9 +32,18 @@
             // Hide the root element
             rootElement.style.display = 'none';
 
+            // Get the date text element
+            var dateElement = document.querySelector('[data-testid="Component::Text-dateText--0"]');
+
             // Create a temporary div for printing
             var printDiv = document.createElement('div');
             printDiv.id = 'temp-print-content';
+
+            // Add the date text above the print contents if it exists
+            if (dateElement) {
+                var clonedDateElement = dateElement.cloneNode(true);
+                printDiv.appendChild(clonedDateElement);
+            }
 
             // Clone the print contents to avoid modifying the original
             var clonedContents = printContents.cloneNode(true);
