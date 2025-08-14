@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Daily Roundup Print
 // @namespace    http://tampermonkey.net/
-// @version      1.5
+// @version      1.6
 // @description  Custom print functionality with Cmd+P
 // @author       You
 // @match        https://oralart.retool.com/*
@@ -52,12 +52,10 @@
             // Add print-specific styles to the temporary div
             printDiv.innerHTML = `
                 <style>
-                    @media print {
                         body { margin: 0; padding: 20px; }
                         * { -webkit-print-color-adjust: exact !important; color-adjust: exact !important; }
                         [data-testid="TableWrapper::ScrollableContainer"] { max-height: unset !important; overflow: visible !important; }
                         #temp-print-content { display: block !important; }
-                    }
                     @media screen {
                         #temp-print-content { display: none; }
                     }
