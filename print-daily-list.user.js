@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Daily Roundup Print
 // @namespace    http://tampermonkey.net/
-// @version      1.6
+// @version      1.7
 // @description  Custom print functionality with Cmd+P
 // @author       You
 // @match        https://oralart.retool.com/*
@@ -100,5 +100,20 @@
             customPrint();
         }
     });
+
+
+    const selector = "div[role='gridcell']:has(svg[data-testid*='IconCaretRightSmall']:not([class*='isExpanded']))";
+
+    function clickNext() {
+        if (window.location.href.startsWith("https://oralart.retool.com/apps/f4903bfa-cad4-11ee-9076-8301327d0c43")) {
+            const elements = document.querySelectorAll(selector);
+            if (elements[0]) {
+                elements[0].click();
+            }
+        }
+        setTimeout(clickNext, 50);
+    }
+
+    clickNext();
 
 })();
