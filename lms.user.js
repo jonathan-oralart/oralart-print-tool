@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LMS
 // @namespace    http://tampermonkey.net/
-// @version      1.47
+// @version      1.48
 // @description  Extracts and prints lab sheet information from 3Shape LMS
 // @author       You
 // @match        https://lms.3shape.com/ui/CaseRecord/*
@@ -31,6 +31,8 @@
         return;
     }
     window.lmsScriptInitialized = true;
+
+    let isOptionKeyDown = false;
 
     // Move updateButtonState outside of addPrintButton
     const updateButtonState = () => {
@@ -119,8 +121,13 @@
             }
 
             if (hasGenerateButtons) {
-                setButtonState(generateLabelButton, 'Print Label', true, generateAndDownloadLabel);
-                setButtonState(generateWorkTicketButton, 'Print Work Ticket', true, generateAndDownloadWorkTicket);
+                if (isOptionKeyDown) {
+                    setButtonState(generateLabelButton, 'View Label', true, viewLabels);
+                    setButtonState(generateWorkTicketButton, 'View Work Ticket', true, viewWorkTicket);
+                } else {
+                    setButtonState(generateLabelButton, 'Print Label', true, generateAndDownloadLabel);
+                    setButtonState(generateWorkTicketButton, 'Print Work Ticket', true, generateAndDownloadWorkTicket);
+                }
             }
         } else if (cachedData && (cachedPDFs.workTicket || cachedPDFs.label)) {
             // When PDFs are generated
@@ -133,16 +140,21 @@
             }
 
             if (hasGenerateButtons) {
-                if (cachedPDFs.label) {
-                    setButtonState(generateLabelButton, 'Download Label', true, downloadLabelOnly);
+                if (isOptionKeyDown) {
+                    setButtonState(generateLabelButton, 'View Label', true, viewLabels);
+                    setButtonState(generateWorkTicketButton, 'View Work Ticket', true, viewWorkTicket);
                 } else {
-                    setButtonState(generateLabelButton, 'Generate Label', true, generateAndDownloadLabel);
-                }
+                    if (cachedPDFs.label) {
+                        setButtonState(generateLabelButton, 'Download Label', true, downloadLabelOnly);
+                    } else {
+                        setButtonState(generateLabelButton, 'Generate Label', true, generateAndDownloadLabel);
+                    }
 
-                if (cachedPDFs.workTicket) {
-                    setButtonState(generateWorkTicketButton, 'Download Work Ticket', true, downloadWorkTicketOnly);
-                } else {
-                    setButtonState(generateWorkTicketButton, 'Print Work Ticket', true, generateAndDownloadWorkTicket);
+                    if (cachedPDFs.workTicket) {
+                        setButtonState(generateWorkTicketButton, 'Download Work Ticket', true, downloadWorkTicketOnly);
+                    } else {
+                        setButtonState(generateWorkTicketButton, 'Print Work Ticket', true, generateAndDownloadWorkTicket);
+                    }
                 }
             }
         } else {
@@ -779,6 +791,16 @@
             margin-bottom: 15px;
             font-weight: bold;
         }
+        .send-for-approval-section {
+            background-color: #f3833b; /* Orange from image */
+            color: black;
+            padding: 18px 12px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+        .send-for-approval-section strong {
+            font-size: 16px;
+        }
     </style>
 </head>
 <body>
@@ -830,6 +852,16 @@
             </div>
 
             <div class="content-section total-units">Total Units: ${data.caseItems.length}</div>
+
+            ${data.caseItems.some(item => item.item.includes('*Send design for approval * Check it happened*')) ? `
+            <div class="content-section send-for-approval-section">
+                <div><strong>Send Design for approval</strong></div>
+                <div style="display: flex; justify-content: space-between; margin-top: 5px;">
+                    <span>Sent: ___________</span>
+                    <span>Approved: ___________</span>
+                </div>
+            </div>
+            ` : ''}
 
             <div class="content-section">
                 <table class="details-table">
@@ -1470,6 +1502,27 @@
     let originalPushState;
     let originalReplaceState;
 
+    const handleOptionKeyDown = (e) => {
+        if (e.key === 'Alt' && !isOptionKeyDown) {
+            isOptionKeyDown = true;
+            updateButtonState();
+        }
+    };
+
+    const handleOptionKeyUp = (e) => {
+        if (e.key === 'Alt' && isOptionKeyDown) {
+            isOptionKeyDown = false;
+            updateButtonState();
+        }
+    };
+
+    const handleWindowBlur = () => {
+        if (isOptionKeyDown) {
+            isOptionKeyDown = false;
+            updateButtonState();
+        }
+    };
+
     // Add this function to check for username
     const checkUsername = () => {
         let username = GM_getValue('username', '');
@@ -1546,6 +1599,9 @@
             }
 
             document.addEventListener('keydown', handleKeyboardShortcut);
+            document.addEventListener('keydown', handleOptionKeyDown);
+            document.addEventListener('keyup', handleOptionKeyUp);
+            window.addEventListener('blur', handleWindowBlur);
 
             // Add mutation observer to detect case data changes
             setupCaseChangeObserver();
@@ -1725,6 +1781,9 @@
         // Remove event listeners
         window.removeEventListener('popstate', handleUrlChange);
         document.removeEventListener('keydown', handleKeyboardShortcut);
+        document.removeEventListener('keydown', handleOptionKeyDown);
+        document.removeEventListener('keyup', handleOptionKeyUp);
+        window.removeEventListener('blur', handleWindowBlur);
     };
 
     // Modify handleUrlChange to handle initialization flag
