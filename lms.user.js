@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LMS
 // @namespace    http://tampermonkey.net/
-// @version      1.48
+// @version      1.50
 // @description  Extracts and prints lab sheet information from 3Shape LMS
 // @author       You
 // @match        https://lms.3shape.com/ui/CaseRecord/*
@@ -794,7 +794,7 @@
         .send-for-approval-section {
             background-color: #f3833b; /* Orange from image */
             color: black;
-            padding: 18px 12px;
+            padding: 16px 12px;
             margin-bottom: 15px;
             font-size: 14px;
         }
@@ -855,7 +855,7 @@
 
             ${data.caseItems.some(item => item.item.includes('*Send design for approval * Check it happened*')) ? `
             <div class="content-section send-for-approval-section">
-                <div><strong>Send Design for approval</strong></div>
+                <div style="margin-bottom: 20px;"><strong>Send Design for approval</strong></div>
                 <div style="display: flex; justify-content: space-between; margin-top: 5px;">
                     <span>Sent: ___________</span>
                     <span>Approved: ___________</span>
